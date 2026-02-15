@@ -1,0 +1,116 @@
+============================================================
+PERSONAL FINANCE MANAGER - BUILD INSTRUCTIONS
+============================================================
+
+This app is built with React Native and Expo. Follow these
+instructions to build an APK file for Android.
+
+============================================================
+PREREQUISITES
+============================================================
+
+1. Install Node.js (v18 or higher)
+   Download from: https://nodejs.org/
+
+2. Install Expo CLI globally:
+   npm install -g expo-cli eas-cli
+
+3. Create an Expo account at: https://expo.dev/signup
+
+============================================================
+STEP 1: INSTALL DEPENDENCIES
+============================================================
+
+Open a terminal/command prompt in this folder and run:
+
+   npm install
+
+This will install all required packages.
+
+============================================================
+STEP 2: TEST THE APP LOCALLY (Optional)
+============================================================
+
+To test on your phone before building:
+
+1. Install "Expo Go" app on your Android phone from Play Store
+
+2. Run this command:
+   npx expo start
+
+3. Scan the QR code with Expo Go app
+
+============================================================
+STEP 3: BUILD THE APK FILE
+============================================================
+
+METHOD A: Using EAS Build (Recommended - Cloud Build)
+-----------------------------------------------------
+
+1. Login to your Expo account:
+   eas login
+
+2. Configure EAS for your project:
+   eas build:configure
+
+3. Build the APK:
+   eas build -p android --profile preview
+
+4. Wait for the build to complete (usually 10-20 minutes)
+
+5. Download the APK from the link provided
+
+METHOD B: Local Build (Requires Android Studio)
+-----------------------------------------------
+
+1. Install Android Studio and set up Android SDK
+
+2. Run:
+   npx expo run:android
+
+============================================================
+STEP 4: INSTALL ON YOUR PHONE
+============================================================
+
+1. Transfer the APK file to your Android phone
+
+2. On your phone:
+   - Go to Settings > Security
+   - Enable "Install from Unknown Sources"
+   - Open the APK file to install
+
+============================================================
+APP FEATURES
+============================================================
+
+- User Registration & Login
+- Bank Account Management
+- Deposit & Withdrawal Tracking
+- Credit Card Bill Management
+- Pending Payment Reminders
+- Daily/Monthly/Yearly Filters
+- Local Excel-like Database Storage
+
+============================================================
+TROUBLESHOOTING
+============================================================
+
+If npm install fails:
+   - Delete node_modules folder
+   - Delete package-lock.json
+   - Run: npm cache clean --force
+   - Run: npm install
+
+If build fails:
+   - Make sure you're logged into Expo
+   - Check your internet connection
+   - Try: eas build --clear-cache -p android --profile preview
+
+============================================================
+SUPPORT
+============================================================
+
+For any issues, check the Expo documentation:
+https://docs.expo.dev/
+
+============================================================
