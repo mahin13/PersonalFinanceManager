@@ -11,6 +11,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import FinancialInsights from '../components/FinancialInsights';
+import BirthdayWish from '../components/BirthdayWish';
 import {
   getAllBalances,
   getTransactionSummary,
@@ -295,6 +296,7 @@ const DashboardScreen = ({ navigation }) => {
       </ScrollView>
 
       <NotificationModal />
+      <BirthdayWish userName={user?.name} birthdate={user?.birthdate} />
     </View>
   );
 };
