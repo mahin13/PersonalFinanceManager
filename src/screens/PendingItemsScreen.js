@@ -10,6 +10,9 @@ import {
   Modal,
   RefreshControl,
   Platform,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
@@ -169,101 +172,6 @@ const PendingItemsScreen = ({ navigation }) => {
     }
   };
 
-  const AddModal = () => (
-    <Modal
-      visible={showAddModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowAddModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add Pending Item</Text>
-
-          <ScrollView>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Title</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Borrowed from Ahmed"
-                placeholderTextColor="#999"
-                value={title}
-                onChangeText={setTitle}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Amount (BDT)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter amount"
-                placeholderTextColor="#999"
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Due Date</Text>
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Text style={styles.dateText}>{formatDate(dueDate)}</Text>
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={dueDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, selectedDate) => {
-                    setShowDatePicker(Platform.OS === 'ios');
-                    if (selectedDate) {
-                      setDueDate(selectedDate);
-                    }
-                  }}
-                  minimumDate={new Date()}
-                />
-              )}
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description (Optional)</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Add notes..."
-                placeholderTextColor="#999"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-          </ScrollView>
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => {
-                setShowAddModal(false);
-                resetForm();
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.confirmButton]}
-              onPress={handleAddItem}
-            >
-              <Text style={styles.confirmButtonText}>Add Item</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
   const filteredItems = getFilteredItems();
 
   return (
@@ -400,7 +308,107 @@ const PendingItemsScreen = ({ navigation }) => {
         </ScrollView>
       </View>
 
-      <AddModal />
+      {/* Add Modal - Inline with keyboard handling */}
+      <Modal
+        visible={showAddModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Add Pending Item</Text>
+
+                <ScrollView keyboardShouldPersistTaps="handled">
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Title</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., Borrowed from Ahmed"
+                      placeholderTextColor="#999"
+                      value={title}
+                      onChangeText={setTitle}
+                      autoCapitalize="sentences"
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Amount (BDT)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter amount"
+                      placeholderTextColor="#999"
+                      value={amount}
+                      onChangeText={setAmount}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Due Date</Text>
+                    <TouchableOpacity
+                      style={styles.input}
+                      onPress={() => setShowDatePicker(true)}
+                    >
+                      <Text style={styles.dateText}>{formatDate(dueDate)}</Text>
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={dueDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, selectedDate) => {
+                          setShowDatePicker(Platform.OS === 'ios');
+                          if (selectedDate) {
+                            setDueDate(selectedDate);
+                          }
+                        }}
+                        minimumDate={new Date()}
+                      />
+                    )}
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Description (Optional)</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      placeholder="Add notes..."
+                      placeholderTextColor="#999"
+                      value={description}
+                      onChangeText={setDescription}
+                      multiline
+                      numberOfLines={3}
+                    />
+                  </View>
+                </ScrollView>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowAddModal(false);
+                      resetForm();
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={handleAddItem}
+                  >
+                    <Text style={styles.confirmButtonText}>Add Item</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };

@@ -9,6 +9,10 @@ import {
   Alert,
   Modal,
   RefreshControl,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -150,123 +154,6 @@ const CreditCardsScreen = ({ navigation }) => {
     return `${parseFloat(amount).toLocaleString()} BDT`;
   };
 
-  const AddBillModal = () => (
-    <Modal
-      visible={showAddBillModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowAddBillModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add Bill</Text>
-          <Text style={styles.modalSubtitle}>
-            {selectedCard?.bankName} Credit Card
-          </Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bill Amount (BDT)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter bill amount"
-              placeholderTextColor="#999"
-              value={billAmount}
-              onChangeText={setBillAmount}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => {
-                setShowAddBillModal(false);
-                setBillAmount('');
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.confirmButton]}
-              onPress={handleAddBill}
-            >
-              <Text style={styles.confirmButtonText}>Add Bill</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const AddCardModal = () => (
-    <Modal
-      visible={showAddCardModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowAddCardModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add Credit Card</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bank Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., EBL, Standard Chartered"
-              placeholderTextColor="#999"
-              value={newCardName}
-              onChangeText={setNewCardName}
-            />
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Bill Generation Day</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="26"
-                placeholderTextColor="#999"
-                value={newBillDay}
-                onChangeText={setNewBillDay}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.label}>Last Payment Day</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="14"
-                placeholderTextColor="#999"
-                value={newPaymentDay}
-                onChangeText={setNewPaymentDay}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => {
-                setShowAddCardModal(false);
-                setNewCardName('');
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.confirmButton]}
-              onPress={handleAddCard}
-            >
-              <Text style={styles.confirmButtonText}>Add Card</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -377,8 +264,136 @@ const CreditCardsScreen = ({ navigation }) => {
         )}
       </ScrollView>
 
-      <AddBillModal />
-      <AddCardModal />
+      {/* Add Bill Modal - Inline with keyboard handling */}
+      <Modal
+        visible={showAddBillModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddBillModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Add Bill</Text>
+                <Text style={styles.modalSubtitle}>
+                  {selectedCard?.bankName} Credit Card
+                </Text>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Bill Amount (BDT)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter bill amount"
+                    placeholderTextColor="#999"
+                    value={billAmount}
+                    onChangeText={setBillAmount}
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowAddBillModal(false);
+                      setBillAmount('');
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={handleAddBill}
+                  >
+                    <Text style={styles.confirmButtonText}>Add Bill</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Add Card Modal - Inline with keyboard handling */}
+      <Modal
+        visible={showAddCardModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddCardModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Add Credit Card</Text>
+
+                <ScrollView keyboardShouldPersistTaps="handled">
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Bank Name</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., EBL, Standard Chartered"
+                      placeholderTextColor="#999"
+                      value={newCardName}
+                      onChangeText={setNewCardName}
+                    />
+                  </View>
+
+                  <View style={styles.row}>
+                    <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                      <Text style={styles.label}>Bill Generation Day</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="26"
+                        placeholderTextColor="#999"
+                        value={newBillDay}
+                        onChangeText={setNewBillDay}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                      <Text style={styles.label}>Last Payment Day</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="14"
+                        placeholderTextColor="#999"
+                        value={newPaymentDay}
+                        onChangeText={setNewPaymentDay}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  </View>
+                </ScrollView>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowAddCardModal(false);
+                      setNewCardName('');
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={handleAddCard}
+                  >
+                    <Text style={styles.confirmButtonText}>Add Card</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
