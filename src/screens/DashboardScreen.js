@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import FinancialInsights from '../components/FinancialInsights';
 import {
   getAllBalances,
   getTransactionSummary,
@@ -288,6 +289,9 @@ const DashboardScreen = ({ navigation }) => {
             ))}
           </View>
         )}
+
+        {/* Smart Financial Insights */}
+        <FinancialInsights userId={user?.userId} />
       </ScrollView>
 
       <NotificationModal />
