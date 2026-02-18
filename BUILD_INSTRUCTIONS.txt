@@ -83,13 +83,42 @@ STEP 4: INSTALL ON YOUR PHONE
 APP FEATURES
 ============================================================
 
-- User Registration & Login
-- Bank Account Management
+- User Registration & Login (with Remember Me)
+- Bank Account Management (add/delete multiple banks)
+- MFS (Mobile Financial Services) Support
+  * Toggle "Are you using MFS?" during signup or in Profile
+  * Choose from: Bkash, Nagad, Rocket, or Others (custom name)
+  * Each MFS account tracks balances independently
 - Deposit & Withdrawal Tracking
+  * Deposit to any bank or MFS account
+  * Record costs/expenses with categories
+    (Food, Transport, Bills, Shopping, Entertainment, Healthcare)
 - Credit Card Bill Management
-- Pending Payment Reminders
-- Daily/Monthly/Yearly Filters
-- Local Excel-like Database Storage
+  * Add multiple credit cards with bill generation & payment days
+  * Track pending/overdue/paid bills
+  * Pay bills from any bank account
+- Pending Payment Management
+  * Add pending payments with title, amount, due date & description
+  * Edit or delete pending items directly from Dashboard
+  * Mark items as completed from Dashboard
+  * Auto-detection of overdue items
+  * Filter by: All, Pending, Overdue, Completed
+- Dashboard Overview
+  * Total balance across all accounts
+  * Large summary cards for Deposits, Withdrawals & Credit Card Costs
+  * Daily/Monthly/Yearly filter for summaries
+  * Account balances grouped by Banks and MFS
+  * Pending credit card bills & pending payments at a glance
+  * Smart financial insights
+- Profile Management
+  * Profile picture (pick from gallery)
+  * Edit name
+  * Add/remove bank accounts and MFS accounts
+  * Enable/disable credit cards
+- Notifications for overdue bills and pending payments
+- Birthday wish feature
+- Local-only data storage (no server, fully private)
+- Excel export of all data
 
 ============================================================
 TROUBLESHOOTING

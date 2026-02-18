@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -6,6 +6,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { requestNotificationPermissions, scheduleBillReminders } from './src/services/notificationService';
+import { getCreditCards, getUserProfile } from './src/services/database';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -18,6 +20,7 @@ import WithdrawalScreen from './src/screens/WithdrawalScreen';
 import CreditCardsScreen from './src/screens/CreditCardsScreen';
 import PendingItemsScreen from './src/screens/PendingItemsScreen';
 import TransactionsScreen from './src/screens/TransactionsScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,6 +48,25 @@ const TabIcon = ({ label, focused }) => {
 
 // Main Tab Navigator
 const MainTabs = () => {
+  const { user } = useAuth();
+  const [showCreditCards, setShowCreditCards] = useState(false);
+
+  useEffect(() => {
+    const checkCreditCards = async () => {
+      if (!user) return;
+      try {
+        const [profile, cards] = await Promise.all([
+          getUserProfile(user.userId),
+          getCreditCards(user.userId),
+        ]);
+        setShowCreditCards(profile?.hasCreditCards === true || cards.length > 0);
+      } catch (error) {
+        console.error('Error checking credit cards:', error);
+      }
+    };
+    checkCreditCards();
+  }, [user]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -58,7 +80,9 @@ const MainTabs = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Transactions" component={TransactionsScreen} />
-      <Tab.Screen name="Credit Cards" component={CreditCardsScreen} />
+      {showCreditCards && (
+        <Tab.Screen name="Credit Cards" component={CreditCardsScreen} />
+      )}
       <Tab.Screen name="Pending" component={PendingItemsScreen} />
     </Tab.Navigator>
   );
@@ -92,6 +116,7 @@ const AppStack = () => {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="Deposit" component={DepositScreen} />
       <Stack.Screen name="Withdrawal" component={WithdrawalScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 };
@@ -99,6 +124,19 @@ const AppStack = () => {
 // Root Navigator
 const RootNavigator = () => {
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      // Request notification permissions and schedule reminders on login
+      const setupNotifications = async () => {
+        const granted = await requestNotificationPermissions();
+        if (granted) {
+          await scheduleBillReminders(user.userId);
+        }
+      };
+      setupNotifications();
+    }
+  }, [user]);
 
   if (loading) {
     return (

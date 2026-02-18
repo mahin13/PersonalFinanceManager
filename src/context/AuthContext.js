@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser, createUser, setTempPassword, updateUserPassword } from '../services/database';
+import { loginUser, createUser, setTempPassword, updateUserPassword, getUserProfile } from '../services/database';
 
 const AuthContext = createContext({});
 
@@ -86,6 +86,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = async () => {
+    if (!user) return;
+    try {
+      const profile = await getUserProfile(user.userId);
+      if (profile) {
+        setUser(profile);
+        await AsyncStorage.setItem('current_user', JSON.stringify(profile));
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -97,6 +110,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         resetPassword,
         changePassword,
+        refreshUser,
       }}
     >
       {children}

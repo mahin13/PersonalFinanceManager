@@ -103,10 +103,24 @@ export const createUser = async (userData) => {
     email: userData.email,
     birthdate: userData.birthdate,
     password: userData.password,
+    hasCreditCards: userData.hasCreditCards || false,
     createdAt: new Date().toISOString(),
   };
 
   db.users.push(user);
+
+  // Add MFS accounts if provided
+  if (userData.mfsAccounts && userData.mfsAccounts.length > 0) {
+    userData.mfsAccounts.forEach(mfsName => {
+      db.bankAccounts.push({
+        accountId: generateId(),
+        userId,
+        bankName: mfsName,
+        type: 'mfs',
+        createdAt: new Date().toISOString(),
+      });
+    });
+  }
 
   // Add bank accounts
   if (userData.bankAccounts && userData.bankAccounts.length > 0) {
@@ -115,6 +129,7 @@ export const createUser = async (userData) => {
         accountId: generateId(),
         userId,
         bankName,
+        type: 'bank',
         createdAt: new Date().toISOString(),
       });
     });
@@ -192,12 +207,13 @@ export const getBankAccounts = async (userId) => {
   return db.bankAccounts.filter(a => a.userId === userId);
 };
 
-export const addBankAccount = async (userId, bankName) => {
+export const addBankAccount = async (userId, bankName, type = 'bank') => {
   const db = await loadDatabase();
   const account = {
     accountId: generateId(),
     userId,
     bankName,
+    type,
     createdAt: new Date().toISOString(),
   };
   db.bankAccounts.push(account);
@@ -238,6 +254,7 @@ export const getAllBalances = async (userId) => {
     });
     balances[account.accountId] = {
       bankName: account.bankName,
+      type: account.type || 'bank',
       balance,
     };
   }
@@ -252,7 +269,8 @@ export const addTransaction = async (transactionData) => {
   const transaction = {
     transactionId: generateId(),
     userId: transactionData.userId,
-    accountId: transactionData.accountId,
+    accountId: transactionData.accountId || '',
+    creditCardId: transactionData.creditCardId || '',
     type: transactionData.type,
     amount: transactionData.amount,
     reason: transactionData.reason || '',
@@ -299,10 +317,13 @@ export const getTransactionSummary = async (userId, filter = 'all') => {
 
   let totalDeposits = 0;
   let totalWithdrawals = 0;
+  let totalCreditCardCosts = 0;
 
   transactions.forEach(t => {
     if (t.type === 'Deposit') {
       totalDeposits += parseFloat(t.amount);
+    } else if (t.creditCardId) {
+      totalCreditCardCosts += parseFloat(t.amount);
     } else {
       totalWithdrawals += parseFloat(t.amount);
     }
@@ -311,9 +332,35 @@ export const getTransactionSummary = async (userId, filter = 'all') => {
   return {
     totalDeposits,
     totalWithdrawals,
-    netBalance: totalDeposits - totalWithdrawals,
+    totalCreditCardCosts,
+    netBalance: totalDeposits - totalWithdrawals - totalCreditCardCosts,
     transactionCount: transactions.length,
   };
+};
+
+export const editTransaction = async (transactionId, updates) => {
+  const db = await loadDatabase();
+  const index = db.transactions.findIndex(t => t.transactionId === transactionId);
+
+  if (index === -1) {
+    throw new Error('Transaction not found');
+  }
+
+  db.transactions[index] = {
+    ...db.transactions[index],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await saveDatabase(db);
+  return db.transactions[index];
+};
+
+export const deleteTransaction = async (transactionId) => {
+  const db = await loadDatabase();
+  db.transactions = db.transactions.filter(t => t.transactionId !== transactionId);
+  await saveDatabase(db);
+  return true;
 };
 
 // ==================== CREDIT CARD OPERATIONS ====================
@@ -321,6 +368,13 @@ export const getTransactionSummary = async (userId, filter = 'all') => {
 export const getCreditCards = async (userId) => {
   const db = await loadDatabase();
   return db.creditCards.filter(c => c.userId === userId);
+};
+
+export const getCreditCardTransactions = async (cardId) => {
+  const db = await loadDatabase();
+  return db.transactions
+    .filter(t => t.creditCardId === cardId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
 export const addCreditCard = async (cardData) => {
@@ -403,6 +457,41 @@ export const checkAndUpdateOverdueBills = async (userId) => {
   await saveDatabase(db);
 };
 
+export const payBillWithCost = async (billId, accountId, userId) => {
+  const db = await loadDatabase();
+  const billIndex = db.creditCardBills.findIndex(b => b.billId === billId);
+
+  if (billIndex === -1) {
+    throw new Error('Bill not found');
+  }
+
+  const bill = db.creditCardBills[billIndex];
+  const card = db.creditCards.find(c => c.cardId === bill.cardId);
+  const cardName = card ? card.bankName : 'Unknown';
+
+  // Create withdrawal transaction
+  const transaction = {
+    transactionId: generateId(),
+    userId,
+    accountId,
+    type: 'Withdrawal',
+    amount: parseFloat(bill.billAmount),
+    reason: `Credit Card Bill Payment - ${cardName} (${bill.billMonth})`,
+    creditCardBillId: billId,
+    date: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+
+  db.transactions.push(transaction);
+
+  // Mark bill as paid
+  db.creditCardBills[billIndex].status = 'Paid';
+  db.creditCardBills[billIndex].updatedAt = new Date().toISOString();
+
+  await saveDatabase(db);
+  return { transaction, bill: db.creditCardBills[billIndex] };
+};
+
 // ==================== PENDING ITEMS OPERATIONS ====================
 
 export const getPendingItems = async (userId) => {
@@ -442,6 +531,24 @@ export const updatePendingItemStatus = async (pendingId, status) => {
 
   db.pendingItems[itemIndex].status = status;
   db.pendingItems[itemIndex].updatedAt = new Date().toISOString();
+  await saveDatabase(db);
+  return db.pendingItems[itemIndex];
+};
+
+export const editPendingItem = async (pendingId, updates) => {
+  const db = await loadDatabase();
+  const itemIndex = db.pendingItems.findIndex(p => p.pendingId === pendingId);
+
+  if (itemIndex === -1) {
+    throw new Error('Pending item not found');
+  }
+
+  db.pendingItems[itemIndex] = {
+    ...db.pendingItems[itemIndex],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
   await saveDatabase(db);
   return db.pendingItems[itemIndex];
 };
@@ -560,4 +667,93 @@ export const deleteCreditCardBill = async (billId) => {
   db.creditCardBills = db.creditCardBills.filter(b => b.billId !== billId);
   await saveDatabase(db);
   return true;
+};
+
+// ==================== PROFILE OPERATIONS ====================
+
+export const getUserProfile = async (userId) => {
+  const db = await loadDatabase();
+  return db.users.find(u => u.userId === userId);
+};
+
+export const updateUserProfile = async (userId, updates) => {
+  const db = await loadDatabase();
+  const userIndex = db.users.findIndex(u => u.userId === userId);
+
+  if (userIndex === -1) {
+    throw new Error('User not found');
+  }
+
+  db.users[userIndex] = {
+    ...db.users[userIndex],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await saveDatabase(db);
+  return db.users[userIndex];
+};
+
+export const deleteBankAccount = async (accountId) => {
+  const db = await loadDatabase();
+
+  // Delete related transactions
+  db.transactions = db.transactions.filter(t => t.accountId !== accountId);
+
+  // Delete the bank account
+  db.bankAccounts = db.bankAccounts.filter(a => a.accountId !== accountId);
+
+  await saveDatabase(db);
+  return true;
+};
+
+export const deleteCreditCard = async (cardId) => {
+  const db = await loadDatabase();
+
+  // Delete related transactions
+  db.transactions = db.transactions.filter(t => t.creditCardId !== cardId);
+
+  // Delete related bills
+  db.creditCardBills = db.creditCardBills.filter(b => b.cardId !== cardId);
+
+  // Delete the credit card
+  db.creditCards = db.creditCards.filter(c => c.cardId !== cardId);
+
+  await saveDatabase(db);
+  return true;
+};
+
+// ==================== REMEMBER ME OPERATIONS ====================
+
+const REMEMBER_ME_KEY = 'remember_me_credentials';
+
+export const saveRememberMe = async (email, password) => {
+  try {
+    // Store credentials securely (in production, use expo-secure-store)
+    await AsyncStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({ email, password }));
+    return true;
+  } catch (error) {
+    console.error('Error saving remember me:', error);
+    return false;
+  }
+};
+
+export const getRememberMe = async () => {
+  try {
+    const data = await AsyncStorage.getItem(REMEMBER_ME_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Error getting remember me:', error);
+    return null;
+  }
+};
+
+export const clearRememberMe = async () => {
+  try {
+    await AsyncStorage.removeItem(REMEMBER_ME_KEY);
+    return true;
+  } catch (error) {
+    console.error('Error clearing remember me:', error);
+    return false;
+  }
 };

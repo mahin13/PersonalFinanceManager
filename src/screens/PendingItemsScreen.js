@@ -11,7 +11,6 @@ import {
   RefreshControl,
   Platform,
   KeyboardAvoidingView,
-  TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -22,6 +21,7 @@ import {
   addPendingItem,
   updatePendingItemStatus,
   deletePendingItem,
+  editPendingItem,
 } from '../services/database';
 
 const PendingItemsScreen = ({ navigation }) => {
@@ -35,6 +35,7 @@ const PendingItemsScreen = ({ navigation }) => {
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [editingItem, setEditingItem] = useState(null);
 
   const loadData = async () => {
     try {
@@ -95,6 +96,43 @@ const PendingItemsScreen = ({ navigation }) => {
     setAmount('');
     setDescription('');
     setDueDate(new Date());
+    setEditingItem(null);
+  };
+
+  const handleEditPress = (item) => {
+    setEditingItem(item);
+    setTitle(item.title);
+    setAmount(String(item.amount));
+    setDescription(item.description || '');
+    setDueDate(new Date(item.dueDate));
+    setShowAddModal(true);
+  };
+
+  const handleEditItem = async () => {
+    if (!title.trim()) {
+      Alert.alert('Error', 'Please enter a title');
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+
+    try {
+      await editPendingItem(editingItem.pendingId, {
+        title: title.trim(),
+        amount: parseFloat(amount),
+        dueDate: dueDate.toISOString(),
+        description: description.trim(),
+      });
+
+      Alert.alert('Success', 'Pending item updated successfully');
+      setShowAddModal(false);
+      resetForm();
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update pending item');
+    }
   };
 
   const handleMarkAsCompleted = async (pendingId) => {
@@ -294,6 +332,12 @@ const PendingItemsScreen = ({ navigation }) => {
                         <Text style={styles.completeButtonText}>Mark Complete</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => handleEditPress(item)}
+                      >
+                        <Text style={styles.editButtonText}>Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
                         style={styles.deleteButton}
                         onPress={() => handleDelete(item.pendingId)}
                       >
@@ -308,7 +352,7 @@ const PendingItemsScreen = ({ navigation }) => {
         </ScrollView>
       </View>
 
-      {/* Add Modal - Inline with keyboard handling */}
+      {/* Add Modal - Full screen bottom sheet */}
       <Modal
         visible={showAddModal}
         transparent
@@ -316,97 +360,108 @@ const PendingItemsScreen = ({ navigation }) => {
         onRequestClose={() => setShowAddModal(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Add Pending Item</Text>
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.modalDismissArea}
+              activeOpacity={1}
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowAddModal(false);
+                resetForm();
+              }}
+            />
+            <View style={styles.modalContent}>
+              <View style={styles.modalHandle} />
+              <Text style={styles.modalTitle}>{editingItem ? 'Edit Pending Item' : 'Add Pending Item'}</Text>
 
-                <ScrollView keyboardShouldPersistTaps="handled">
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Title</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g., Borrowed from Ahmed"
-                      placeholderTextColor="#999"
-                      value={title}
-                      onChangeText={setTitle}
-                      autoCapitalize="sentences"
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Amount (BDT)</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter amount"
-                      placeholderTextColor="#999"
-                      value={amount}
-                      onChangeText={setAmount}
-                      keyboardType="numeric"
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Due Date</Text>
-                    <TouchableOpacity
-                      style={styles.input}
-                      onPress={() => setShowDatePicker(true)}
-                    >
-                      <Text style={styles.dateText}>{formatDate(dueDate)}</Text>
-                    </TouchableOpacity>
-                    {showDatePicker && (
-                      <DateTimePicker
-                        value={dueDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event, selectedDate) => {
-                          setShowDatePicker(Platform.OS === 'ios');
-                          if (selectedDate) {
-                            setDueDate(selectedDate);
-                          }
-                        }}
-                        minimumDate={new Date()}
-                      />
-                    )}
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Description (Optional)</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      placeholder="Add notes..."
-                      placeholderTextColor="#999"
-                      value={description}
-                      onChangeText={setDescription}
-                      multiline
-                      numberOfLines={3}
-                    />
-                  </View>
-                </ScrollView>
-
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => {
-                      setShowAddModal(false);
-                      resetForm();
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.confirmButton]}
-                    onPress={handleAddItem}
-                  >
-                    <Text style={styles.confirmButtonText}>Add Item</Text>
-                  </TouchableOpacity>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Title</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., Borrowed from Ahmed"
+                    placeholderTextColor="#999"
+                    value={title}
+                    onChangeText={setTitle}
+                    autoCapitalize="sentences"
+                  />
                 </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Amount (BDT)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter amount"
+                    placeholderTextColor="#999"
+                    value={amount}
+                    onChangeText={setAmount}
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Due Date</Text>
+                  <TouchableOpacity
+                    style={styles.input}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Text style={styles.dateText}>{formatDate(dueDate)}</Text>
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={dueDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, selectedDate) => {
+                        setShowDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                          setDueDate(selectedDate);
+                        }
+                      }}
+                      minimumDate={editingItem ? undefined : new Date()}
+                    />
+                  )}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Description (Optional)</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Add notes..."
+                    placeholderTextColor="#999"
+                    value={description}
+                    onChangeText={setDescription}
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+              </ScrollView>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowAddModal(false);
+                    resetForm();
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={editingItem ? handleEditItem : handleAddItem}
+                >
+                  <Text style={styles.confirmButtonText}>{editingItem ? 'Save Changes' : 'Add Item'}</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </TouchableWithoutFeedback>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -599,6 +654,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
+  editButton: {
+    backgroundColor: '#FFF3E0',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  editButtonText: {
+    color: '#FF9800',
+    fontWeight: '600',
+  },
   deleteButton: {
     backgroundColor: '#FFEBEE',
     paddingVertical: 10,
@@ -613,15 +680,26 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  modalDismissArea: {
+    flex: 1,
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 24,
-    width: '90%',
-    maxHeight: '80%',
+    paddingTop: 12,
+    maxHeight: '90%',
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#DDD',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 24,

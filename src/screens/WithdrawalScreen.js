@@ -8,10 +8,23 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
-import { getBankAccounts, addTransaction, getAccountBalance } from '../services/database';
+import {
+  getBankAccounts,
+  addTransaction,
+  getAccountBalance,
+  getPendingCreditCardBills,
+  getCreditCards,
+  payBillWithCost,
+} from '../services/database';
+
+const isCreditCard = (value) => value && value.startsWith('cc_');
 
 const WithdrawalScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -22,21 +35,30 @@ const WithdrawalScreen = ({ navigation }) => {
   const [currentBalance, setCurrentBalance] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [isBillPayment, setIsBillPayment] = useState(false);
+  const [pendingBills, setPendingBills] = useState([]);
+  const [creditCards, setCreditCards] = useState([]);
+  const [selectedBillId, setSelectedBillId] = useState('');
 
   useEffect(() => {
     loadAccounts();
+    loadBills();
   }, []);
 
   useEffect(() => {
-    if (selectedAccount) {
+    if (selectedAccount && !isCreditCard(selectedAccount)) {
       loadBalance();
     }
   }, [selectedAccount]);
 
   const loadAccounts = async () => {
     try {
-      const userAccounts = await getBankAccounts(user.userId);
+      const [userAccounts, userCards] = await Promise.all([
+        getBankAccounts(user.userId),
+        getCreditCards(user.userId),
+      ]);
       setAccounts(userAccounts);
+      setCreditCards(userCards);
       if (userAccounts.length > 0) {
         setSelectedAccount(userAccounts[0].accountId);
       }
@@ -45,6 +67,24 @@ const WithdrawalScreen = ({ navigation }) => {
     } finally {
       setLoadingAccounts(false);
     }
+  };
+
+  const loadBills = async () => {
+    try {
+      const [bills, cards] = await Promise.all([
+        getPendingCreditCardBills(user.userId),
+        getCreditCards(user.userId),
+      ]);
+      setPendingBills(bills);
+      setCreditCards(cards);
+    } catch (error) {
+      console.error('Error loading bills:', error);
+    }
+  };
+
+  const getCardName = (cardId) => {
+    const card = creditCards.find(c => c.cardId === cardId);
+    return card ? card.bankName : 'Unknown';
   };
 
   const loadBalance = async () => {
@@ -58,9 +98,37 @@ const WithdrawalScreen = ({ navigation }) => {
 
   const handleWithdrawal = async () => {
     if (!selectedAccount) {
-      Alert.alert('Error', 'Please select a bank account');
+      Alert.alert('Error', 'Please select an account');
       return;
     }
+
+    // Handle credit card bill payment
+    if (isBillPayment) {
+      if (isCreditCard(selectedAccount)) {
+        Alert.alert('Error', 'Cannot pay a bill from a credit card');
+        return;
+      }
+      if (!selectedBillId) {
+        Alert.alert('Error', 'Please select a bill to pay');
+        return;
+      }
+      setLoading(true);
+      try {
+        await payBillWithCost(selectedBillId, selectedAccount, user.userId);
+        const bill = pendingBills.find(b => b.billId === selectedBillId);
+        Alert.alert(
+          'Success',
+          `Credit card bill of ${bill?.billAmount || ''} BDT paid successfully!`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } catch (error) {
+        Alert.alert('Error', 'Failed to process bill payment');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!amount || parseFloat(amount) <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
@@ -73,14 +141,22 @@ const WithdrawalScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      await addTransaction({
+      const transactionData = {
         userId: user.userId,
-        accountId: selectedAccount,
         type: 'Withdrawal',
         amount: parseFloat(amount),
         reason: reason.trim(),
         date: new Date().toISOString(),
-      });
+      };
+
+      if (isCreditCard(selectedAccount)) {
+        transactionData.accountId = '';
+        transactionData.creditCardId = selectedAccount.replace('cc_', '');
+      } else {
+        transactionData.accountId = selectedAccount;
+      }
+
+      await addTransaction(transactionData);
 
       Alert.alert('Success', `Expense of ${amount} BDT recorded successfully!`, [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -116,18 +192,25 @@ const WithdrawalScreen = ({ navigation }) => {
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Record Expense</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Record Expense</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Select Bank Account</Text>
+            <Text style={styles.label}>Select Account</Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedAccount}
                 onValueChange={(value) => setSelectedAccount(value)}
                 style={styles.picker}
               >
+                {accounts.length > 0 && (
+                  <Picker.Item label="--- Bank Accounts ---" value="" enabled={false} />
+                )}
                 {accounts.map((account) => (
                   <Picker.Item
                     key={account.accountId}
@@ -135,11 +218,21 @@ const WithdrawalScreen = ({ navigation }) => {
                     value={account.accountId}
                   />
                 ))}
+                {!isBillPayment && creditCards.length > 0 && (
+                  <Picker.Item label="--- Credit Cards ---" value="" enabled={false} />
+                )}
+                {!isBillPayment && creditCards.map((card) => (
+                  <Picker.Item
+                    key={`cc_${card.cardId}`}
+                    label={`${card.bankName} (Credit Card)`}
+                    value={`cc_${card.cardId}`}
+                  />
+                ))}
               </Picker>
             </View>
           </View>
 
-          {selectedAccount && (
+          {selectedAccount && !isCreditCard(selectedAccount) && (
             <View style={styles.balanceInfo}>
               <Text style={styles.balanceLabel}>Current Balance</Text>
               <Text style={styles.balanceAmount}>{formatCurrency(currentBalance)}</Text>
@@ -171,7 +264,44 @@ const WithdrawalScreen = ({ navigation }) => {
             />
           </View>
 
-          {amount && parseFloat(amount) > 0 && (
+          {/* Credit Card Bill Payment Section */}
+          {isBillPayment && pendingBills.length > 0 && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Select Bill to Pay</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={selectedBillId}
+                  onValueChange={(value) => {
+                    setSelectedBillId(value);
+                    const bill = pendingBills.find(b => b.billId === value);
+                    if (bill) {
+                      setAmount(String(bill.billAmount));
+                    }
+                  }}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="-- Select a bill --" value="" />
+                  {pendingBills.map((bill) => (
+                    <Picker.Item
+                      key={bill.billId}
+                      label={`${getCardName(bill.cardId)} - ${bill.billAmount} BDT (${bill.billMonth}) [${bill.status}]`}
+                      value={bill.billId}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+          )}
+
+          {isBillPayment && pendingBills.length === 0 && (
+            <View style={[styles.previewContainer, { backgroundColor: '#E8F5E9' }]}>
+              <Text style={{ color: '#4CAF50', textAlign: 'center' }}>
+                No pending credit card bills
+              </Text>
+            </View>
+          )}
+
+          {!isBillPayment && !isCreditCard(selectedAccount) && amount && parseFloat(amount) > 0 && (
             <View style={[styles.previewContainer, newBalance < 0 && styles.warningContainer]}>
               <Text style={styles.previewLabel}>New Balance will be</Text>
               <Text style={[styles.previewAmount, newBalance < 0 && styles.negativeAmount]}>
@@ -193,7 +323,9 @@ const WithdrawalScreen = ({ navigation }) => {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Confirm Expense</Text>
+              <Text style={styles.buttonText}>
+                {isBillPayment ? 'Pay Bill' : 'Confirm Expense'}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -208,14 +340,18 @@ const WithdrawalScreen = ({ navigation }) => {
                   key={category}
                   style={[
                     styles.categoryButton,
-                    reason === category && styles.categoryButtonActive,
+                    !isBillPayment && reason === category && styles.categoryButtonActive,
                   ]}
-                  onPress={() => setReason(category)}
+                  onPress={() => {
+                    setIsBillPayment(false);
+                    setSelectedBillId('');
+                    setReason(category);
+                  }}
                 >
                   <Text
                     style={[
                       styles.categoryText,
-                      reason === category && styles.categoryTextActive,
+                      !isBillPayment && reason === category && styles.categoryTextActive,
                     ]}
                   >
                     {category}
@@ -223,9 +359,33 @@ const WithdrawalScreen = ({ navigation }) => {
                 </TouchableOpacity>
               )
             )}
+            {pendingBills.length > 0 && (
+              <TouchableOpacity
+                style={[
+                  styles.categoryButton,
+                  isBillPayment && styles.categoryButtonActive,
+                  { borderColor: '#673AB7' },
+                ]}
+                onPress={() => {
+                  setIsBillPayment(true);
+                  setReason('Credit Card Bill Payment');
+                }}
+              >
+                <Text
+                  style={[
+                    styles.categoryText,
+                    isBillPayment && styles.categoryTextActive,
+                    !isBillPayment && { color: '#673AB7' },
+                  ]}
+                >
+                  CC Bill Payment
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };

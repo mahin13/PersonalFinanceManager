@@ -13,7 +13,20 @@ import {
   Switch,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
+
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1);
+
+const getOrdinalSuffix = (day) => {
+  if (day >= 11 && day <= 13) return 'th';
+  switch (day % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+};
 
 const SignUpScreen = ({ navigation }) => {
   const [step, setStep] = useState(1);
@@ -29,6 +42,9 @@ const SignUpScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   // Step 2: Bank Accounts
+  const [hasMFS, setHasMFS] = useState(false);
+  const [selectedMFS, setSelectedMFS] = useState([]);
+  const [customMFSName, setCustomMFSName] = useState('');
   const [numBankAccounts, setNumBankAccounts] = useState('1');
   const [bankAccounts, setBankAccounts] = useState(['']);
 
@@ -36,7 +52,7 @@ const SignUpScreen = ({ navigation }) => {
   const [hasCreditCards, setHasCreditCards] = useState(false);
   const [numCreditCards, setNumCreditCards] = useState('1');
   const [creditCards, setCreditCards] = useState([
-    { bankName: '', billGenerationDay: '26', lastPaymentDay: '14' }
+    { bankName: '', billGenerationDay: 26, lastPaymentDay: 14 }
   ]);
 
   const updateBankAccountCount = (count) => {
@@ -57,7 +73,7 @@ const SignUpScreen = ({ navigation }) => {
     setNumCreditCards(count);
     const newCards = [...creditCards];
     while (newCards.length < num) {
-      newCards.push({ bankName: '', billGenerationDay: '26', lastPaymentDay: '14' });
+      newCards.push({ bankName: '', billGenerationDay: 26, lastPaymentDay: 14 });
     }
     while (newCards.length > num) {
       newCards.pop();
@@ -149,6 +165,7 @@ const SignUpScreen = ({ navigation }) => {
       email: email.trim(),
       birthdate: birthdate.toISOString(),
       password,
+      mfsAccounts: hasMFS ? [...selectedMFS, ...(customMFSName.trim() ? [customMFSName.trim()] : [])] : [],
       bankAccounts: bankAccounts.filter(acc => acc.trim()),
       hasCreditCards,
       creditCards: hasCreditCards
@@ -252,8 +269,69 @@ const SignUpScreen = ({ navigation }) => {
     </>
   );
 
+  const toggleMFSProvider = (provider) => {
+    setSelectedMFS(prev =>
+      prev.includes(provider)
+        ? prev.filter(p => p !== provider)
+        : [...prev, provider]
+    );
+  };
+
   const renderStep2 = () => (
     <>
+      <View style={styles.switchContainer}>
+        <Text style={styles.label}>Are you using MFS?</Text>
+        <Switch
+          value={hasMFS}
+          onValueChange={(val) => {
+            setHasMFS(val);
+            if (!val) {
+              setSelectedMFS([]);
+              setCustomMFSName('');
+            }
+          }}
+          trackColor={{ false: '#ddd', true: '#E91E63' }}
+          thumbColor={hasMFS ? '#E91E63' : '#f4f3f4'}
+        />
+      </View>
+
+      {hasMFS && (
+        <View style={styles.mfsContainer}>
+          <Text style={styles.smallLabel}>Select your MFS providers:</Text>
+          <View style={styles.mfsOptions}>
+            {['Bkash', 'Nagad', 'Rocket'].map((provider) => (
+              <TouchableOpacity
+                key={provider}
+                style={[
+                  styles.mfsChip,
+                  selectedMFS.includes(provider) && styles.mfsChipSelected,
+                ]}
+                onPress={() => toggleMFSProvider(provider)}
+              >
+                <Text
+                  style={[
+                    styles.mfsChipText,
+                    selectedMFS.includes(provider) && styles.mfsChipTextSelected,
+                  ]}
+                >
+                  {provider}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.smallLabel}>Others (enter name)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Upay, SureCash"
+              placeholderTextColor="#999"
+              value={customMFSName}
+              onChangeText={setCustomMFSName}
+            />
+          </View>
+        </View>
+      )}
+
       <View style={styles.inputContainer}>
         <Text style={styles.label}>How many bank accounts do you have?</Text>
         <TextInput
@@ -322,29 +400,41 @@ const SignUpScreen = ({ navigation }) => {
                 />
               </View>
 
-              <View style={styles.row}>
-                <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.smallLabel}>Bill Generation Day</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g., 26"
-                    placeholderTextColor="#999"
-                    value={card.billGenerationDay}
-                    onChangeText={(value) => updateCreditCard(index, 'billGenerationDay', value)}
-                    keyboardType="numeric"
-                  />
+              <View style={styles.inputContainer}>
+                <Text style={styles.smallLabel}>Bill Generation Day</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={card.billGenerationDay}
+                    onValueChange={(value) => updateCreditCard(index, 'billGenerationDay', value)}
+                    style={styles.dayPicker}
+                  >
+                    {DAY_OPTIONS.map((day) => (
+                      <Picker.Item
+                        key={day}
+                        label={`${day}${getOrdinalSuffix(day)} of every month`}
+                        value={day}
+                      />
+                    ))}
+                  </Picker>
                 </View>
+              </View>
 
-                <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.smallLabel}>Last Payment Day</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g., 14"
-                    placeholderTextColor="#999"
-                    value={card.lastPaymentDay}
-                    onChangeText={(value) => updateCreditCard(index, 'lastPaymentDay', value)}
-                    keyboardType="numeric"
-                  />
+              <View style={styles.inputContainer}>
+                <Text style={styles.smallLabel}>Last Payment Day</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={card.lastPaymentDay}
+                    onValueChange={(value) => updateCreditCard(index, 'lastPaymentDay', value)}
+                    style={styles.dayPicker}
+                  >
+                    {DAY_OPTIONS.map((day) => (
+                      <Picker.Item
+                        key={day}
+                        label={`${day}${getOrdinalSuffix(day)} of every month`}
+                        value={day}
+                      />
+                    ))}
+                  </Picker>
                 </View>
               </View>
             </View>
@@ -512,6 +602,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
   },
+  pickerContainer: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  dayPicker: {
+    height: 50,
+  },
   button: {
     backgroundColor: '#1E88E5',
     borderRadius: 12,
@@ -545,6 +643,39 @@ const styles = StyleSheet.create({
   },
   progressDotComplete: {
     backgroundColor: '#4CAF50',
+  },
+  mfsContainer: {
+    backgroundColor: '#FFF0F5',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  mfsOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  mfsChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  mfsChipSelected: {
+    backgroundColor: '#E91E63',
+    borderColor: '#E91E63',
+  },
+  mfsChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  mfsChipTextSelected: {
+    color: '#fff',
   },
 });
 

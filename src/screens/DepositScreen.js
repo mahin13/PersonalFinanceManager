@@ -8,6 +8,10 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
@@ -113,8 +117,13 @@ const DepositScreen = ({ navigation }) => {
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.card}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.card}>
           <Text style={styles.cardTitle}>Add Money</Text>
 
           <View style={styles.inputGroup}>
@@ -175,16 +184,18 @@ const DepositScreen = ({ navigation }) => {
               <Text style={styles.buttonText}>Confirm Deposit</Text>
             )}
           </TouchableOpacity>
-        </View>
+            </View>
+          </TouchableWithoutFeedback>
 
-        {accounts.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              No bank accounts found. Please add bank accounts in your profile.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          {accounts.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                No bank accounts found. Please add bank accounts in your profile.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,30 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { saveRememberMe, getRememberMe, clearRememberMe } from '../services/database';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const { login } = useAuth();
+
+  useEffect(() => {
+    loadSavedCredentials();
+  }, []);
+
+  const loadSavedCredentials = async () => {
+    const saved = await getRememberMe();
+    if (saved) {
+      setEmail(saved.email);
+      setPassword(saved.password);
+      setRememberMe(true);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -33,7 +49,14 @@ const LoginScreen = ({ navigation }) => {
     const result = await login(email.trim(), password);
     setLoading(false);
 
-    if (!result.success) {
+    if (result.success) {
+      // Save or clear remember me based on toggle
+      if (rememberMe) {
+        await saveRememberMe(email.trim(), password);
+      } else {
+        await clearRememberMe();
+      }
+    } else {
       Alert.alert('Login Failed', result.error);
     }
   };
@@ -43,7 +66,7 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.headerContainer}>
           <Text style={styles.appName}>Finance Manager</Text>
           <Text style={styles.tagline}>Manage your finances smartly</Text>
@@ -79,12 +102,23 @@ const LoginScreen = ({ navigation }) => {
             />
           </View>
 
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => navigation.navigate('ResetPassword')}
-          >
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
+          <View style={styles.optionsRow}>
+            <View style={styles.rememberMeContainer}>
+              <Switch
+                value={rememberMe}
+                onValueChange={setRememberMe}
+                trackColor={{ false: '#ddd', true: '#90CAF9' }}
+                thumbColor={rememberMe ? '#1E88E5' : '#f4f3f4'}
+              />
+              <Text style={styles.rememberMeText}>Remember Me</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ResetPassword')}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -169,9 +203,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rememberMeText: {
+    marginLeft: 8,
+    color: '#666',
+    fontSize: 14,
   },
   forgotPasswordText: {
     color: '#1E88E5',
