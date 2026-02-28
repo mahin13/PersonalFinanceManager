@@ -23,6 +23,7 @@ import {
   getCreditCards,
   payBillWithCost,
 } from '../services/database';
+import { requestWidgetUpdate } from 'react-native-android-widget';
 
 const isCreditCard = (value) => value && value.startsWith('cc_');
 
@@ -157,6 +158,9 @@ const WithdrawalScreen = ({ navigation }) => {
       }
 
       await addTransaction(transactionData);
+
+      // Update home screen balance widget
+      try { await requestWidgetUpdate('Balance'); } catch (e) {}
 
       Alert.alert('Success', `Expense of ${amount} BDT recorded successfully!`, [
         { text: 'OK', onPress: () => navigation.goBack() },

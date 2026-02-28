@@ -16,6 +16,7 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { getBankAccounts, addTransaction, getAccountBalance } from '../services/database';
+import { requestWidgetUpdate } from 'react-native-android-widget';
 
 const DepositScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -23,8 +24,11 @@ const DepositScreen = ({ navigation }) => {
   const [selectedAccount, setSelectedAccount] = useState('');
   const [amount, setAmount] = useState('');
   const [currentBalance, setCurrentBalance] = useState(0);
+  const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
+
+  const DEPOSIT_CATEGORIES = ['Salary', 'Freelance', 'Gift', 'Investment Return', 'Refund', 'Other'];
 
   useEffect(() => {
     loadAccounts();
@@ -77,8 +81,12 @@ const DepositScreen = ({ navigation }) => {
         accountId: selectedAccount,
         type: 'Deposit',
         amount: parseFloat(amount),
+        reason: reason.trim(),
         date: new Date().toISOString(),
       });
+
+      // Update home screen balance widget
+      try { await requestWidgetUpdate('Balance'); } catch (e) {}
 
       Alert.alert('Success', `Deposited ${amount} BDT successfully!`, [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -162,6 +170,38 @@ const DepositScreen = ({ navigation }) => {
               onChangeText={setAmount}
               keyboardType="numeric"
             />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Reason / Source</Text>
+            <TextInput
+              style={styles.reasonInput}
+              placeholder="e.g., Monthly salary"
+              placeholderTextColor="#999"
+              value={reason}
+              onChangeText={setReason}
+            />
+            <View style={styles.chipContainer}>
+              {DEPOSIT_CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.chip,
+                    reason === cat && styles.chipSelected,
+                  ]}
+                  onPress={() => setReason(reason === cat ? '' : cat)}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      reason === cat && styles.chipTextSelected,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {amount && parseFloat(amount) > 0 && (
@@ -289,6 +329,40 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4CAF50',
     marginTop: 4,
+  },
+  reasonInput: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#333',
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  chipSelected: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  chipTextSelected: {
+    color: '#fff',
   },
   amountInput: {
     backgroundColor: '#F5F5F5',

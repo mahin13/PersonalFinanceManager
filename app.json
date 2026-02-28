@@ -2,7 +2,7 @@
   "expo": {
     "name": "Personal Finance Manager",
     "slug": "personal-finance-manager",
-    "version": "1.0.0",
+    "version": "1.0.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -39,6 +39,31 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#1E88E5"
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "QuickActions",
+              "label": "Finance - Quick Actions",
+              "minWidth": "200dp",
+              "minHeight": "80dp",
+              "description": "Quick deposit and cost buttons for Finance Manager",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Balance",
+              "label": "Finance - Balance",
+              "minWidth": "200dp",
+              "minHeight": "110dp",
+              "description": "View your account balances at a glance",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
         }
       ]
     ],

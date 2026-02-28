@@ -4,10 +4,15 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { registerWidgetTaskHandler } from 'react-native-android-widget';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { requestNotificationPermissions, scheduleBillReminders } from './src/services/notificationService';
 import { getCreditCards, getUserProfile } from './src/services/database';
+import { widgetTaskHandler } from './src/widgets/widgetTaskHandler';
+
+// Register widget task handler for Android home screen widgets
+registerWidgetTaskHandler(widgetTaskHandler);
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -21,6 +26,7 @@ import CreditCardsScreen from './src/screens/CreditCardsScreen';
 import PendingItemsScreen from './src/screens/PendingItemsScreen';
 import TransactionsScreen from './src/screens/TransactionsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import ImportDataScreen from './src/screens/ImportDataScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -116,6 +122,7 @@ const AppStack = () => {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="Deposit" component={DepositScreen} />
       <Stack.Screen name="Withdrawal" component={WithdrawalScreen} />
+      <Stack.Screen name="ImportData" component={ImportDataScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );

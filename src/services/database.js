@@ -104,6 +104,10 @@ export const createUser = async (userData) => {
     birthdate: userData.birthdate,
     password: userData.password,
     hasCreditCards: userData.hasCreditCards || false,
+    defaultMonthlyCost: userData.defaultMonthlyCost || null,
+    defaultMonthlyDeposit: userData.defaultMonthlyDeposit || null,
+    defaultDepositAccount: null,
+    defaultCostAccount: null,
     createdAt: new Date().toISOString(),
   };
 
@@ -149,8 +153,25 @@ export const createUser = async (userData) => {
     });
   }
 
+  // Resolve default account names to IDs
+  const userAccounts = db.bankAccounts.filter(a => a.userId === userId);
+  if (userData.defaultDepositAccountName) {
+    const depAcc = userAccounts.find(a => a.bankName.toLowerCase() === userData.defaultDepositAccountName.toLowerCase());
+    if (depAcc) {
+      const userIdx = db.users.findIndex(u => u.userId === userId);
+      db.users[userIdx].defaultDepositAccount = depAcc.accountId;
+    }
+  }
+  if (userData.defaultCostAccountName) {
+    const costAcc = userAccounts.find(a => a.bankName.toLowerCase() === userData.defaultCostAccountName.toLowerCase());
+    if (costAcc) {
+      const userIdx = db.users.findIndex(u => u.userId === userId);
+      db.users[userIdx].defaultCostAccount = costAcc.accountId;
+    }
+  }
+
   await saveDatabase(db);
-  return { userId, ...user };
+  return { userId, ...db.users.find(u => u.userId === userId) };
 };
 
 export const loginUser = async (email, password) => {
@@ -283,6 +304,25 @@ export const addTransaction = async (transactionData) => {
   return transaction;
 };
 
+export const bulkAddTransactions = async (transactions) => {
+  const db = await loadDatabase();
+  transactions.forEach(t => {
+    db.transactions.push({
+      transactionId: generateId(),
+      userId: t.userId,
+      accountId: t.accountId || '',
+      creditCardId: t.creditCardId || '',
+      type: t.type,
+      amount: t.amount,
+      reason: t.reason || '',
+      date: t.date || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    });
+  });
+  await saveDatabase(db);
+  return transactions.length;
+};
+
 export const getTransactions = async (userId, filter = 'all') => {
   const db = await loadDatabase();
   let transactions = db.transactions.filter(t => t.userId === userId);
@@ -411,6 +451,9 @@ export const addCreditCardBill = async (billData) => {
     cardId: billData.cardId,
     billMonth: billData.billMonth,
     billAmount: billData.billAmount,
+    minimumDue: billData.minimumDue || null,
+    paidAmount: 0,
+    partialPayments: [],
     status: 'Pending',
     createdAt: new Date().toISOString(),
   };
@@ -429,6 +472,24 @@ export const updateCreditCardBillStatus = async (billId, status) => {
 
   db.creditCardBills[billIndex].status = status;
   db.creditCardBills[billIndex].updatedAt = new Date().toISOString();
+  await saveDatabase(db);
+  return db.creditCardBills[billIndex];
+};
+
+export const editCreditCardBill = async (billId, updates) => {
+  const db = await loadDatabase();
+  const billIndex = db.creditCardBills.findIndex(b => b.billId === billId);
+
+  if (billIndex === -1) {
+    throw new Error('Bill not found');
+  }
+
+  db.creditCardBills[billIndex] = {
+    ...db.creditCardBills[billIndex],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
   await saveDatabase(db);
   return db.creditCardBills[billIndex];
 };
@@ -486,10 +547,98 @@ export const payBillWithCost = async (billId, accountId, userId) => {
 
   // Mark bill as paid
   db.creditCardBills[billIndex].status = 'Paid';
+  db.creditCardBills[billIndex].paidAmount = parseFloat(bill.billAmount);
   db.creditCardBills[billIndex].updatedAt = new Date().toISOString();
 
   await saveDatabase(db);
   return { transaction, bill: db.creditCardBills[billIndex] };
+};
+
+export const makePartialPayment = async (billId, paymentAmount, accountId, userId, deductFromBill) => {
+  const db = await loadDatabase();
+  const billIndex = db.creditCardBills.findIndex(b => b.billId === billId);
+
+  if (billIndex === -1) {
+    throw new Error('Bill not found');
+  }
+
+  const bill = db.creditCardBills[billIndex];
+  const card = db.creditCards.find(c => c.cardId === bill.cardId);
+  const cardName = card ? card.bankName : 'Unknown';
+
+  // Create withdrawal transaction
+  const transaction = {
+    transactionId: generateId(),
+    userId,
+    accountId,
+    type: 'Withdrawal',
+    amount: paymentAmount,
+    reason: `Partial CC Payment - ${cardName} (${bill.billMonth})`,
+    creditCardBillId: billId,
+    date: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+
+  db.transactions.push(transaction);
+
+  // Record partial payment
+  if (!db.creditCardBills[billIndex].partialPayments) {
+    db.creditCardBills[billIndex].partialPayments = [];
+  }
+  db.creditCardBills[billIndex].partialPayments.push({
+    amount: paymentAmount,
+    accountId,
+    date: new Date().toISOString(),
+    deductedFromBill: deductFromBill,
+  });
+
+  // If deducting from bill, update paid amount
+  if (deductFromBill) {
+    const currentPaid = db.creditCardBills[billIndex].paidAmount || 0;
+    db.creditCardBills[billIndex].paidAmount = currentPaid + paymentAmount;
+
+    // Auto-mark as paid if fully paid
+    if (db.creditCardBills[billIndex].paidAmount >= parseFloat(bill.billAmount)) {
+      db.creditCardBills[billIndex].status = 'Paid';
+    }
+  }
+
+  db.creditCardBills[billIndex].updatedAt = new Date().toISOString();
+
+  await saveDatabase(db);
+  return { transaction, bill: db.creditCardBills[billIndex] };
+};
+
+// Mark a CC transaction as bill-paid (deduct from pending bill)
+export const markTransactionBillPaid = async (transactionId, billId) => {
+  const db = await loadDatabase();
+  const txnIndex = db.transactions.findIndex(t => t.transactionId === transactionId);
+  if (txnIndex === -1) throw new Error('Transaction not found');
+
+  const billIndex = db.creditCardBills.findIndex(b => b.billId === billId);
+  if (billIndex === -1) throw new Error('Bill not found');
+
+  const txn = db.transactions[txnIndex];
+  const bill = db.creditCardBills[billIndex];
+
+  // Mark transaction as bill-paid
+  db.transactions[txnIndex].billPaid = true;
+  db.transactions[txnIndex].billPaidBillId = billId;
+  db.transactions[txnIndex].updatedAt = new Date().toISOString();
+
+  // Deduct from bill's paid amount
+  const currentPaid = bill.paidAmount || 0;
+  db.creditCardBills[billIndex].paidAmount = currentPaid + parseFloat(txn.amount);
+
+  // Auto-mark as paid if fully paid
+  if (db.creditCardBills[billIndex].paidAmount >= parseFloat(bill.billAmount)) {
+    db.creditCardBills[billIndex].status = 'Paid';
+  }
+
+  db.creditCardBills[billIndex].updatedAt = new Date().toISOString();
+
+  await saveDatabase(db);
+  return { transaction: db.transactions[txnIndex], bill: db.creditCardBills[billIndex] };
 };
 
 // ==================== PENDING ITEMS OPERATIONS ====================
@@ -721,6 +870,43 @@ export const deleteCreditCard = async (cardId) => {
 
   await saveDatabase(db);
   return true;
+};
+
+// ==================== EXPORT OPERATIONS ====================
+
+export const exportTransactionsToExcel = async (userId, filter = 'all') => {
+  try {
+    const transactions = await getTransactions(userId, filter);
+    const db = await loadDatabase();
+    const accounts = db.bankAccounts.filter(a => a.userId === userId);
+    const accountMap = {};
+    accounts.forEach(a => { accountMap[a.accountId] = a.bankName; });
+
+    const exportData = transactions.map(t => ({
+      Date: new Date(t.date).toLocaleDateString(),
+      Type: t.type,
+      Amount: t.amount,
+      Reason: t.reason || '',
+      Account: accountMap[t.accountId] || 'N/A',
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const filterLabel = filter === 'daily' ? 'Today' : filter === 'monthly' ? 'This Month' : filter === 'yearly' ? 'This Year' : 'All Time';
+    XLSX.utils.book_append_sheet(workbook, worksheet, filterLabel);
+
+    const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+    const fileName = `transactions_${filter}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filePath = FileSystem.documentDirectory + fileName;
+    await FileSystem.writeAsStringAsync(filePath, wbout, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return { filePath, fileName, count: exportData.length };
+  } catch (error) {
+    console.error('Error exporting transactions:', error);
+    throw error;
+  }
 };
 
 // ==================== REMEMBER ME OPERATIONS ====================

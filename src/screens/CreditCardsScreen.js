@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Switch,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,6 +26,9 @@ import {
   getBankAccounts,
   payBillWithCost,
   getCreditCardTransactions,
+  editCreditCardBill,
+  makePartialPayment,
+  markTransactionBillPaid,
 } from '../services/database';
 import { scheduleBillReminders } from '../services/notificationService';
 
@@ -49,6 +53,13 @@ const CreditCardsScreen = ({ navigation }) => {
   const [cardTransactions, setCardTransactions] = useState({});
   const [expandedTransactions, setExpandedTransactions] = useState({});
   const [expandedPaymentHistory, setExpandedPaymentHistory] = useState({});
+  const [showEditBillModal, setShowEditBillModal] = useState(false);
+  const [editingBill, setEditingBill] = useState(null);
+  const [editBillAmount, setEditBillAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('full');
+  const [partialAmount, setPartialAmount] = useState('');
+  const [deductFromBill, setDeductFromBill] = useState(true);
+  const [minimumDue, setMinimumDue] = useState('');
 
   const loadData = async () => {
     try {
@@ -115,11 +126,13 @@ const CreditCardsScreen = ({ navigation }) => {
         cardId: selectedCard.cardId,
         billMonth,
         billAmount: parseFloat(billAmount),
+        minimumDue: minimumDue ? parseFloat(minimumDue) : null,
       });
 
       Alert.alert('Success', 'Bill added successfully');
       setShowAddBillModal(false);
       setBillAmount('');
+      setMinimumDue('');
       setSelectedCard(null);
       loadData();
     } catch (error) {
@@ -129,6 +142,9 @@ const CreditCardsScreen = ({ navigation }) => {
 
   const handleMarkAsPaid = (bill) => {
     setPayingBill(bill);
+    setPaymentMode('full');
+    setPartialAmount('');
+    setDeductFromBill(true);
     if (bankAccounts.length > 0) {
       setSelectedPayAccount(bankAccounts[0].accountId);
     }
@@ -143,12 +159,37 @@ const CreditCardsScreen = ({ navigation }) => {
     if (!payingBill) return;
 
     try {
-      await payBillWithCost(payingBill.billId, selectedPayAccount, user.userId);
-      setShowPayBillModal(false);
-      setPayingBill(null);
-      loadData();
-      scheduleBillReminders(user.userId);
-      Alert.alert('Success', 'Bill marked as paid and expense recorded!');
+      if (paymentMode === 'partial') {
+        if (!partialAmount || parseFloat(partialAmount) <= 0) {
+          Alert.alert('Error', 'Please enter a valid partial amount');
+          return;
+        }
+        const remaining = parseFloat(payingBill.billAmount) - (payingBill.paidAmount || 0);
+        if (deductFromBill && parseFloat(partialAmount) > remaining) {
+          Alert.alert('Error', `Amount exceeds remaining balance of ${remaining.toLocaleString()} BDT`);
+          return;
+        }
+        await makePartialPayment(
+          payingBill.billId,
+          parseFloat(partialAmount),
+          selectedPayAccount,
+          user.userId,
+          deductFromBill
+        );
+        setShowPayBillModal(false);
+        setPayingBill(null);
+        setPartialAmount('');
+        loadData();
+        scheduleBillReminders(user.userId);
+        Alert.alert('Success', 'Partial payment recorded!');
+      } else {
+        await payBillWithCost(payingBill.billId, selectedPayAccount, user.userId);
+        setShowPayBillModal(false);
+        setPayingBill(null);
+        loadData();
+        scheduleBillReminders(user.userId);
+        Alert.alert('Success', 'Bill marked as paid and expense recorded!');
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to process bill payment');
     }
@@ -309,12 +350,51 @@ const CreditCardsScreen = ({ navigation }) => {
                           <Text style={styles.billAmount}>
                             {formatCurrency(bill.billAmount)}
                           </Text>
-                          <TouchableOpacity
-                            style={styles.paidButton}
-                            onPress={() => handleMarkAsPaid(bill)}
-                          >
-                            <Text style={styles.paidButtonText}>Mark Paid</Text>
-                          </TouchableOpacity>
+                          {bill.minimumDue && (bill.paidAmount || 0) < bill.minimumDue && (
+                            <Text style={styles.minimumDueText}>
+                              Min Due: {formatCurrency(bill.minimumDue)}
+                            </Text>
+                          )}
+                          {(bill.paidAmount || 0) > 0 && bill.paidAmount < bill.billAmount && (
+                            <Text style={styles.partialPaidText}>
+                              Paid: {formatCurrency(bill.paidAmount)} | Remaining: {formatCurrency(bill.billAmount - bill.paidAmount)}
+                            </Text>
+                          )}
+                          <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                            <TouchableOpacity
+                              style={styles.editBillButton}
+                              onPress={() => {
+                                setEditingBill(bill);
+                                setEditBillAmount(String(bill.billAmount));
+                                setShowEditBillModal(true);
+                              }}
+                            >
+                              <Text style={styles.editBillButtonText}>Edit</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.paidButton}
+                              onPress={() => handleMarkAsPaid(bill)}
+                            >
+                              <Text style={styles.paidButtonText}>Mark Paid</Text>
+                            </TouchableOpacity>
+                            {bill.minimumDue && (bill.paidAmount || 0) < bill.minimumDue && (
+                              <TouchableOpacity
+                                style={styles.minDueButton}
+                                onPress={() => {
+                                  setPayingBill(bill);
+                                  setPaymentMode('partial');
+                                  setPartialAmount(String(bill.minimumDue));
+                                  setDeductFromBill(true);
+                                  if (bankAccounts.length > 0) {
+                                    setSelectedPayAccount(bankAccounts[0].accountId);
+                                  }
+                                  setShowPayBillModal(true);
+                                }}
+                              >
+                                <Text style={styles.minDueButtonText}>Pay Minimum</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
                         </View>
                       </View>
                     ))
@@ -382,21 +462,58 @@ const CreditCardsScreen = ({ navigation }) => {
                         </Text>
                       </TouchableOpacity>
                       {isTxnExpanded &&
-                        txns.map((txn) => (
-                          <View key={txn.transactionId} style={styles.txnItem}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.txnReason}>
-                                {txn.reason || 'No description'}
-                              </Text>
-                              <Text style={styles.txnDate}>
-                                {new Date(txn.date).toLocaleDateString()}
-                              </Text>
+                        txns.map((txn) => {
+                          const pendingBillsForCard = activeBills;
+                          return (
+                            <View key={txn.transactionId} style={styles.txnItem}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.txnReason}>
+                                  {txn.reason || 'No description'}
+                                </Text>
+                                <Text style={styles.txnDate}>
+                                  {new Date(txn.date).toLocaleDateString()}
+                                </Text>
+                                {txn.billPaid && (
+                                  <Text style={styles.txnBillPaidBadge}>Bill Paid</Text>
+                                )}
+                              </View>
+                              <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={styles.txnAmount}>
+                                  -{formatCurrency(txn.amount)}
+                                </Text>
+                                {!txn.billPaid && pendingBillsForCard.length > 0 && (
+                                  <TouchableOpacity
+                                    style={styles.txnBillPaidBtn}
+                                    onPress={() => {
+                                      const bill = pendingBillsForCard[0];
+                                      Alert.alert(
+                                        'Mark Bill Paid',
+                                        `Deduct ${formatCurrency(txn.amount)} from ${bill.billMonth} bill (${formatCurrency(bill.billAmount)})?`,
+                                        [
+                                          { text: 'Cancel', style: 'cancel' },
+                                          {
+                                            text: 'Confirm',
+                                            onPress: async () => {
+                                              try {
+                                                await markTransactionBillPaid(txn.transactionId, bill.billId);
+                                                loadData();
+                                                Alert.alert('Success', 'Transaction marked as bill paid!');
+                                              } catch (error) {
+                                                Alert.alert('Error', 'Failed to mark as bill paid');
+                                              }
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                  >
+                                    <Text style={styles.txnBillPaidBtnText}>Bill Paid</Text>
+                                  </TouchableOpacity>
+                                )}
+                              </View>
                             </View>
-                            <Text style={styles.txnAmount}>
-                              -{formatCurrency(txn.amount)}
-                            </Text>
-                          </View>
-                        ))}
+                          );
+                        })}
                     </View>
                   )}
                 </View>
@@ -425,6 +542,7 @@ const CreditCardsScreen = ({ navigation }) => {
                 Keyboard.dismiss();
                 setShowAddBillModal(false);
                 setBillAmount('');
+                setMinimumDue('');
               }}
             />
             <View style={styles.modalContent}>
@@ -446,6 +564,18 @@ const CreditCardsScreen = ({ navigation }) => {
                     keyboardType="numeric"
                   />
                 </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Minimum Due (BDT) - Optional</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter minimum due amount"
+                    placeholderTextColor="#999"
+                    value={minimumDue}
+                    onChangeText={setMinimumDue}
+                    keyboardType="numeric"
+                  />
+                </View>
               </ScrollView>
 
               <View style={styles.modalButtons}>
@@ -454,6 +584,7 @@ const CreditCardsScreen = ({ navigation }) => {
                   onPress={() => {
                     setShowAddBillModal(false);
                     setBillAmount('');
+                    setMinimumDue('');
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -567,6 +698,87 @@ const CreditCardsScreen = ({ navigation }) => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      {/* Edit Bill Modal */}
+      <Modal
+        visible={showEditBillModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditBillModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.modalDismissArea}
+              activeOpacity={1}
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowEditBillModal(false);
+              }}
+            />
+            <View style={styles.modalContent}>
+              <View style={styles.modalHandle} />
+              <Text style={styles.modalTitle}>Edit Bill Amount</Text>
+              {editingBill && (
+                <Text style={styles.modalSubtitle}>
+                  {editingBill.billMonth} - Current: {formatCurrency(editingBill.billAmount)}
+                </Text>
+              )}
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>New Bill Amount (BDT)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter new amount"
+                  placeholderTextColor="#999"
+                  value={editBillAmount}
+                  onChangeText={setEditBillAmount}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowEditBillModal(false);
+                    setEditingBill(null);
+                    setEditBillAmount('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={async () => {
+                    if (!editBillAmount || parseFloat(editBillAmount) <= 0) {
+                      Alert.alert('Error', 'Please enter a valid amount');
+                      return;
+                    }
+                    try {
+                      await editCreditCardBill(editingBill.billId, {
+                        billAmount: parseFloat(editBillAmount),
+                      });
+                      setShowEditBillModal(false);
+                      setEditingBill(null);
+                      setEditBillAmount('');
+                      loadData();
+                      Alert.alert('Success', 'Bill amount updated!');
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to update bill amount');
+                    }
+                  }}
+                >
+                  <Text style={styles.confirmButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Pay Bill Modal */}
       <Modal
         visible={showPayBillModal}
@@ -574,59 +786,126 @@ const CreditCardsScreen = ({ navigation }) => {
         animationType="slide"
         onRequestClose={() => setShowPayBillModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.modalDismissArea}
-            activeOpacity={1}
-            onPress={() => setShowPayBillModal(false)}
-          />
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Pay Credit Card Bill</Text>
-            {payingBill && (
-              <Text style={styles.modalSubtitle}>
-                Amount: {formatCurrency(payingBill.billAmount)} ({payingBill.billMonth})
-              </Text>
-            )}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.modalDismissArea}
+              activeOpacity={1}
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowPayBillModal(false);
+              }}
+            />
+            <View style={styles.modalContent}>
+              <View style={styles.modalHandle} />
+              <Text style={styles.modalTitle}>Pay Credit Card Bill</Text>
+              {payingBill && (
+                <Text style={styles.modalSubtitle}>
+                  Total: {formatCurrency(payingBill.billAmount)} ({payingBill.billMonth})
+                  {(payingBill.paidAmount || 0) > 0 ? ` | Remaining: ${formatCurrency(payingBill.billAmount - (payingBill.paidAmount || 0))}` : ''}
+                </Text>
+              )}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Pay from Account</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={selectedPayAccount}
-                  onValueChange={(value) => setSelectedPayAccount(value)}
-                  style={styles.dayPicker}
+              <ScrollView keyboardShouldPersistTaps="handled">
+                {/* Payment Mode Toggle */}
+                <View style={styles.paymentModeContainer}>
+                  <TouchableOpacity
+                    style={[styles.paymentModeBtn, paymentMode === 'full' && styles.paymentModeBtnActive]}
+                    onPress={() => setPaymentMode('full')}
+                  >
+                    <Text style={[styles.paymentModeBtnText, paymentMode === 'full' && styles.paymentModeBtnTextActive]}>
+                      Full Payment
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.paymentModeBtn, paymentMode === 'partial' && styles.paymentModeBtnActive]}
+                    onPress={() => setPaymentMode('partial')}
+                  >
+                    <Text style={[styles.paymentModeBtnText, paymentMode === 'partial' && styles.paymentModeBtnTextActive]}>
+                      Partial Payment
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {paymentMode === 'partial' && (
+                  <>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Payment Amount (BDT)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Enter amount to pay"
+                        placeholderTextColor="#999"
+                        value={partialAmount}
+                        onChangeText={setPartialAmount}
+                        keyboardType="numeric"
+                      />
+                    </View>
+
+                    <View style={styles.deductToggleContainer}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.label}>Deduct from main bill?</Text>
+                        <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
+                          {deductFromBill
+                            ? 'Payment will reduce the remaining bill amount'
+                            : 'Payment recorded as transaction only, bill amount unchanged'}
+                        </Text>
+                      </View>
+                      <Switch
+                        value={deductFromBill}
+                        onValueChange={setDeductFromBill}
+                        trackColor={{ false: '#ddd', true: '#90CAF9' }}
+                        thumbColor={deductFromBill ? '#1E88E5' : '#f4f3f4'}
+                      />
+                    </View>
+                  </>
+                )}
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Pay from Account</Text>
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={selectedPayAccount}
+                      onValueChange={(value) => setSelectedPayAccount(value)}
+                      style={styles.dayPicker}
+                    >
+                      {bankAccounts.map((account) => (
+                        <Picker.Item
+                          key={account.accountId}
+                          label={account.bankName}
+                          value={account.accountId}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
+              </ScrollView>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowPayBillModal(false);
+                    setPayingBill(null);
+                    setPartialAmount('');
+                  }}
                 >
-                  {bankAccounts.map((account) => (
-                    <Picker.Item
-                      key={account.accountId}
-                      label={account.bankName}
-                      value={account.accountId}
-                    />
-                  ))}
-                </Picker>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={handleConfirmPayBill}
+                >
+                  <Text style={styles.confirmButtonText}>
+                    {paymentMode === 'partial' ? 'Pay Partial' : 'Pay Full Bill'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowPayBillModal(false);
-                  setPayingBill(null);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleConfirmPayBill}
-              >
-                <Text style={styles.confirmButtonText}>Pay Bill</Text>
-              </TouchableOpacity>
-            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -810,6 +1089,17 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     textDecorationLine: 'line-through',
   },
+  editBillButton: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  editBillButtonText: {
+    color: '#1E88E5',
+    fontSize: 11,
+    fontWeight: '600',
+  },
   paidButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 12,
@@ -820,6 +1110,62 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: '600',
+  },
+  minimumDueText: {
+    fontSize: 11,
+    color: '#FF9800',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  minDueButton: {
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FF9800',
+  },
+  minDueButtonText: {
+    color: '#FF9800',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  partialPaidText: {
+    fontSize: 11,
+    color: '#4CAF50',
+    marginTop: 2,
+  },
+  paymentModeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  paymentModeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  paymentModeBtnActive: {
+    backgroundColor: '#673AB7',
+  },
+  paymentModeBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  paymentModeBtnTextActive: {
+    color: '#fff',
+  },
+  deductToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
   noPendingText: {
     color: '#4CAF50',
@@ -968,6 +1314,27 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  txnBillPaidBtn: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  txnBillPaidBtnText: {
+    color: '#4CAF50',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  txnBillPaidBadge: {
+    color: '#4CAF50',
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
 });
 

@@ -14,12 +14,17 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import FinancialInsights from '../components/FinancialInsights';
+import MoneyQuotes from '../components/MoneyQuotes';
 import BirthdayWish from '../components/BirthdayWish';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Sharing from 'expo-sharing';
+import { requestWidgetUpdate } from 'react-native-android-widget';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getAllBalances,
   getTransactionSummary,
@@ -32,6 +37,9 @@ import {
   editPendingItem,
   deletePendingItem,
   updatePendingItemStatus,
+  exportTransactionsToExcel,
+  getBankAccounts,
+  addTransaction,
 } from '../services/database';
 
 const DashboardScreen = ({ navigation }) => {
@@ -50,14 +58,56 @@ const DashboardScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [profileData, setProfileData] = useState(null);
   const [showEditPendingModal, setShowEditPendingModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editDueDate, setEditDueDate] = useState(new Date());
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [showEditDatePicker, setShowEditDatePicker] = useState(false);
   const isFirstLoad = useRef(true);
+
+  // Quick action popup states
+  const [showQuickAction, setShowQuickAction] = useState(false);
+  const [quickActionType, setQuickActionType] = useState('Deposit'); // 'Deposit' or 'Withdrawal'
+  const [quickAmount, setQuickAmount] = useState('');
+  const [quickReason, setQuickReason] = useState('');
+  const [quickSelectedAccount, setQuickSelectedAccount] = useState('');
+  const [bankAccountsList, setBankAccountsList] = useState([]);
+  const [quickActionLoading, setQuickActionLoading] = useState(false);
+
+  // What's New popup state
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+
+  const APP_VERSION = '1.0.0.7';
+  const LAST_SEEN_VERSION_KEY = 'last_seen_app_version';
+
+  const checkWhatsNew = async () => {
+    try {
+      const lastSeen = await AsyncStorage.getItem(LAST_SEEN_VERSION_KEY);
+      if (lastSeen && lastSeen !== APP_VERSION) {
+        setShowWhatsNew(true);
+      }
+      // Save current version (for first-time users, no popup; for updaters, popup shown)
+      if (!lastSeen) {
+        await AsyncStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const dismissWhatsNew = async () => {
+    setShowWhatsNew(false);
+    try {
+      await AsyncStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+    } catch (e) {
+      // ignore
+    }
+  };
 
   const loadData = async (isInitial = false) => {
     if (!user) return;
@@ -67,8 +117,8 @@ const DashboardScreen = ({ navigation }) => {
       await checkAndUpdateOverdueBills(user.userId);
       await checkAndUpdateOverduePendingItems(user.userId);
 
-      // Load all data including profile
-      const [balancesData, summaryData, notificationsData, billsData, itemsData, profileData] =
+      // Load all data including profile and bank accounts
+      const [balancesData, summaryData, notificationsData, billsData, itemsData, profileData, accountsData] =
         await Promise.all([
           getAllBalances(user.userId),
           getTransactionSummary(user.userId, filter),
@@ -76,11 +126,15 @@ const DashboardScreen = ({ navigation }) => {
           getPendingCreditCardBills(user.userId),
           getActivePendingItems(user.userId),
           getUserProfile(user.userId),
+          getBankAccounts(user.userId),
         ]);
 
-      // Set profile picture if available
-      if (profileData && profileData.profileImage) {
-        setProfileImage(profileData.profileImage);
+      // Set profile data
+      if (profileData) {
+        setProfileData(profileData);
+        if (profileData.profileImage) {
+          setProfileImage(profileData.profileImage);
+        }
       }
 
       setBalances(balancesData);
@@ -88,9 +142,20 @@ const DashboardScreen = ({ navigation }) => {
       setNotifications(notificationsData);
       setPendingBills(billsData);
       setPendingItems(itemsData);
+      setBankAccountsList(accountsData);
+
+      // Update home screen widget with latest balance
+      try {
+        await requestWidgetUpdate('Balance');
+      } catch (e) {
+        // Widget might not be placed - ignore
+      }
 
       // Only show notification popup on first load (login), not on every tab switch
       if (isInitial) {
+        // Check What's New
+        checkWhatsNew();
+
         const urgentNotifications = notificationsData.filter(
           (n) => n.priority === 'urgent' || n.priority === 'high'
         );
@@ -218,6 +283,76 @@ const DashboardScreen = ({ navigation }) => {
         },
       ]
     );
+  };
+
+  const openQuickAction = (type) => {
+    setQuickActionType(type);
+    setQuickAmount('');
+    setQuickReason('');
+    // Set default account from profile preference
+    const defaultAccountId = type === 'Deposit'
+      ? profileData?.defaultDepositAccount
+      : profileData?.defaultCostAccount;
+    if (defaultAccountId && bankAccountsList.find(a => a.accountId === defaultAccountId)) {
+      setQuickSelectedAccount(defaultAccountId);
+    } else if (bankAccountsList.length > 0) {
+      setQuickSelectedAccount(bankAccountsList[0].accountId);
+    }
+    setShowQuickAction(true);
+  };
+
+  const handleQuickActionSubmit = async () => {
+    if (!quickSelectedAccount) {
+      Alert.alert('Error', 'Please select an account');
+      return;
+    }
+    if (!quickAmount || parseFloat(quickAmount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+
+    setQuickActionLoading(true);
+    try {
+      await addTransaction({
+        userId: user.userId,
+        accountId: quickSelectedAccount,
+        type: quickActionType === 'Deposit' ? 'Deposit' : 'Withdrawal',
+        amount: parseFloat(quickAmount),
+        reason: quickReason.trim() || (quickActionType === 'Deposit' ? 'Quick Deposit' : 'Quick Expense'),
+        date: new Date().toISOString(),
+      });
+
+      try { await requestWidgetUpdate('Balance'); } catch (e) {}
+
+      setShowQuickAction(false);
+      loadData(false);
+      Alert.alert('Success', `${quickActionType === 'Deposit' ? 'Deposited' : 'Expense of'} ${quickAmount} BDT recorded!`);
+    } catch (error) {
+      Alert.alert('Error', `Failed to process ${quickActionType.toLowerCase()}`);
+    } finally {
+      setQuickActionLoading(false);
+    }
+  };
+
+  const handleExport = async (exportFilter) => {
+    setExporting(true);
+    try {
+      const result = await exportTransactionsToExcel(user.userId, exportFilter);
+      setShowExportModal(false);
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (isAvailable) {
+        await Sharing.shareAsync(result.filePath, {
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          dialogTitle: 'Export Transactions',
+        });
+      } else {
+        Alert.alert('Success', `Exported ${result.count} transactions to ${result.fileName}`);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to export data');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const NotificationModal = () => (
@@ -385,21 +520,41 @@ const DashboardScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* Quick Actions */}
+        {/* Import Button - Small */}
+        <View style={styles.importRow}>
+          <TouchableOpacity
+            style={styles.importSmallButton}
+            onPress={() => navigation.navigate('ImportData')}
+          >
+            <Text style={styles.importSmallButtonText}>Import</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Quick Actions - Deposit & Cost */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={[styles.actionButton, styles.depositButton]}
-            onPress={() => navigation.navigate('Deposit')}
+            onPress={() => openQuickAction('Deposit')}
+            onLongPress={() => navigation.navigate('Deposit')}
           >
             <Text style={styles.actionButtonText}>+ Deposit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.costButton]}
-            onPress={() => navigation.navigate('Withdrawal')}
+            onPress={() => openQuickAction('Withdrawal')}
+            onLongPress={() => navigation.navigate('Withdrawal')}
           >
             <Text style={styles.actionButtonText}>- Cost</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Export Button */}
+        <TouchableOpacity
+          style={styles.exportButton}
+          onPress={() => setShowExportModal(true)}
+        >
+          <Text style={styles.exportButtonText}>Export Transactions as Excel</Text>
+        </TouchableOpacity>
 
         {/* Account Balances - Grouped by Type */}
         <View style={styles.section}>
@@ -541,7 +696,14 @@ const DashboardScreen = ({ navigation }) => {
         )}
 
         {/* Smart Financial Insights */}
-        <FinancialInsights userId={user?.userId} />
+        <FinancialInsights
+          userId={user?.userId}
+          defaultMonthlyCost={profileData?.defaultMonthlyCost}
+          defaultMonthlyDeposit={profileData?.defaultMonthlyDeposit}
+        />
+
+        {/* Money Quotes & Islamic Savings */}
+        <MoneyQuotes />
       </ScrollView>
 
       <NotificationModal />
@@ -638,6 +800,185 @@ const DashboardScreen = ({ navigation }) => {
       </Modal>
 
       <BirthdayWish userName={user?.name} birthdate={user?.birthdate} />
+
+      {/* Export Modal */}
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Export Transactions</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowExportModal(false)}
+              >
+                <Text style={styles.modalCloseText}>X</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: '#666', marginBottom: 16 }}>
+              Choose a time period to export as Excel file:
+            </Text>
+            {[
+              { label: "Today's Transactions", value: 'daily' },
+              { label: 'This Month', value: 'monthly' },
+              { label: 'This Year', value: 'yearly' },
+              { label: 'All Time', value: 'all' },
+            ].map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={styles.exportOptionButton}
+                onPress={() => handleExport(option.value)}
+                disabled={exporting}
+              >
+                <Text style={styles.exportOptionText}>{option.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Quick Action Popup */}
+      <Modal
+        visible={showQuickAction}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowQuickAction(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.editModalOverlay}>
+              <View style={styles.quickActionContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: quickActionType === 'Deposit' ? '#4CAF50' : '#F44336' }]}>
+                    {quickActionType === 'Deposit' ? '+ Quick Deposit' : '- Quick Expense'}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.modalCloseButton}
+                    onPress={() => setShowQuickAction(false)}
+                  >
+                    <Text style={styles.modalCloseText}>X</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.quickLabel}>Account</Text>
+                <View style={styles.quickPickerContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {bankAccountsList.map((acc) => (
+                      <TouchableOpacity
+                        key={acc.accountId}
+                        style={[
+                          styles.quickAccountChip,
+                          quickSelectedAccount === acc.accountId && {
+                            backgroundColor: quickActionType === 'Deposit' ? '#4CAF50' : '#F44336',
+                            borderColor: quickActionType === 'Deposit' ? '#4CAF50' : '#F44336',
+                          },
+                        ]}
+                        onPress={() => setQuickSelectedAccount(acc.accountId)}
+                      >
+                        <Text style={[
+                          styles.quickAccountChipText,
+                          quickSelectedAccount === acc.accountId && { color: '#fff' },
+                        ]}>
+                          {acc.bankName}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <Text style={styles.quickLabel}>Amount (BDT)</Text>
+                <TextInput
+                  style={styles.quickAmountInput}
+                  placeholder="0"
+                  placeholderTextColor="#999"
+                  value={quickAmount}
+                  onChangeText={setQuickAmount}
+                  keyboardType="numeric"
+                />
+
+                <Text style={styles.quickLabel}>Reason (Optional)</Text>
+                <TextInput
+                  style={styles.quickReasonInput}
+                  placeholder={quickActionType === 'Deposit' ? 'e.g., Salary' : 'e.g., Groceries'}
+                  placeholderTextColor="#999"
+                  value={quickReason}
+                  onChangeText={setQuickReason}
+                />
+
+                <View style={styles.quickActionButtons}>
+                  <TouchableOpacity
+                    style={[styles.quickActionBtn, {
+                      backgroundColor: quickActionType === 'Deposit' ? '#4CAF50' : '#F44336',
+                    }]}
+                    onPress={handleQuickActionSubmit}
+                    disabled={quickActionLoading}
+                  >
+                    {quickActionLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.quickActionBtnText}>
+                        {quickActionType === 'Deposit' ? 'Deposit' : 'Record Expense'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quickFullPageBtn}
+                    onPress={() => {
+                      setShowQuickAction(false);
+                      navigation.navigate(quickActionType === 'Deposit' ? 'Deposit' : 'Withdrawal');
+                    }}
+                  >
+                    <Text style={styles.quickFullPageBtnText}>Open Full Page</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* What's New Popup */}
+      <Modal
+        visible={showWhatsNew}
+        transparent
+        animationType="slide"
+        onRequestClose={dismissWhatsNew}
+      >
+        <View style={styles.editModalOverlay}>
+          <View style={styles.whatsNewContent}>
+            <Text style={styles.whatsNewTitle}>What's New in v{APP_VERSION}</Text>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {[
+                { title: 'Quick Deposit & Cost', desc: 'Tap Deposit or Cost buttons on the dashboard for a quick popup entry without leaving the home screen.' },
+                { title: 'Default Account Selection', desc: 'Choose a default bank/MFS account for deposits and costs during signup or in Profile settings.' },
+                { title: 'Credit Card Bill Paid', desc: 'Each credit card transaction now shows a "Bill Paid" option to deduct from the CC balance.' },
+                { title: 'Improved Button Layout', desc: 'Import button is now smaller and positioned at the top. Deposit and Cost buttons are more prominent.' },
+                { title: 'Deposit Reason / Source', desc: 'Add reasons to deposits with quick category chips (Salary, Freelance, Gift, etc.)' },
+                { title: 'Import Data', desc: 'Import transactions from CSV, TXT, JSON, or Excel files with auto column mapping.' },
+                { title: 'Home Screen Widgets', desc: 'Two Android widgets: Quick Actions (Deposit/Cost) and Balance (view account balances).' },
+              ].map((item, idx) => (
+                <View key={idx} style={styles.whatsNewItem}>
+                  <Text style={styles.whatsNewItemTitle}>{item.title}</Text>
+                  <Text style={styles.whatsNewItemDesc}>{item.desc}</Text>
+                </View>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.whatsNewDismissBtn}
+              onPress={dismissWhatsNew}
+            >
+              <Text style={styles.whatsNewDismissBtnText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -850,6 +1191,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     paddingLeft: 48,
   },
+  importRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 26,
+    marginBottom: 8,
+  },
+  importSmallButton: {
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  importSmallButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   actionsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -857,8 +1215,8 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 18,
+    borderRadius: 14,
     alignItems: 'center',
     marginHorizontal: 6,
   },
@@ -867,6 +1225,33 @@ const styles = StyleSheet.create({
   },
   costButton: {
     backgroundColor: '#F44336',
+  },
+  exportButton: {
+    backgroundColor: '#E3F2FD',
+    marginHorizontal: 26,
+    marginBottom: 20,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  exportButtonText: {
+    color: '#1E88E5',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  exportOptionButton: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  exportOptionText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '500',
   },
   actionButtonText: {
     color: '#fff',
@@ -1145,6 +1530,121 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Quick Action Popup Styles
+  quickActionContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '92%',
+  },
+  quickLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  quickPickerContainer: {
+    marginBottom: 4,
+  },
+  quickAccountChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginRight: 8,
+  },
+  quickAccountChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  quickAmountInput: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 22,
+    color: '#333',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  quickReasonInput: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#333',
+  },
+  quickActionButtons: {
+    marginTop: 16,
+  },
+  quickActionBtn: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  quickActionBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  quickFullPageBtn: {
+    alignItems: 'center',
+    marginTop: 10,
+    paddingVertical: 8,
+  },
+  quickFullPageBtnText: {
+    color: '#1E88E5',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // What's New Styles
+  whatsNewContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '92%',
+  },
+  whatsNewTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1E88E5',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  whatsNewItem: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  whatsNewItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  whatsNewItemDesc: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 18,
+  },
+  whatsNewDismissBtn: {
+    backgroundColor: '#1E88E5',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  whatsNewDismissBtnText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

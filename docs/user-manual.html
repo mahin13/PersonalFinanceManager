@@ -404,7 +404,7 @@
   <div class="subtitle">User Manual</div>
   <p style="color:#888; font-size:12pt;">A comprehensive guide to managing your personal finances<br>with the Finance Manager mobile application</p>
   <div class="version">
-    <strong>Version 1.3</strong><br>
+    <strong>Version 1.0.0.7</strong><br>
     February 2026
   </div>
 </div>
@@ -417,6 +417,7 @@
     <li class="toc-section"><a href="#ch1-overview">1.1 App Overview</a></li>
     <li class="toc-section"><a href="#ch1-install">1.2 Installation</a></li>
     <li class="toc-section"><a href="#ch1-features">1.3 Key Features</a></li>
+    <li class="toc-section"><a href="#ch1-whats-new">1.4 What's New in v1.0.0.7</a></li>
 
     <li class="toc-chapter"><a href="#ch2">2. Account Setup</a></li>
     <li class="toc-section"><a href="#ch2-signup">2.1 Creating an Account</a></li>
@@ -428,9 +429,12 @@
     <li class="toc-section"><a href="#ch3-balance">3.2 Balance & Summary</a></li>
     <li class="toc-section"><a href="#ch3-notifications">3.3 Notifications</a></li>
     <li class="toc-section"><a href="#ch3-quickactions">3.4 Quick Actions</a></li>
+    <li class="toc-section"><a href="#ch3-insights">3.5 Financial Insights</a></li>
+    <li class="toc-section"><a href="#ch3-quotes">3.6 Words of Wisdom</a></li>
 
     <li class="toc-chapter"><a href="#ch4">4. Deposits</a></li>
     <li class="toc-section"><a href="#ch4-add">4.1 Making a Deposit</a></li>
+    <li class="toc-section"><a href="#ch4-reason">4.2 Deposit Reason & Categories</a></li>
 
     <li class="toc-chapter"><a href="#ch5">5. Withdrawals & Expenses</a></li>
     <li class="toc-section"><a href="#ch5-add">5.1 Recording an Expense</a></li>
@@ -446,9 +450,11 @@
     <li class="toc-chapter"><a href="#ch7">7. Credit Cards</a></li>
     <li class="toc-section"><a href="#ch7-view">7.1 Managing Credit Cards</a></li>
     <li class="toc-section"><a href="#ch7-bills">7.2 Tracking Bills</a></li>
-    <li class="toc-section"><a href="#ch7-history">7.3 Payment History</a></li>
-    <li class="toc-section"><a href="#ch7-transactions">7.4 Credit Card Transactions</a></li>
-    <li class="toc-section"><a href="#ch7-add">7.5 Adding Cards & Bills</a></li>
+    <li class="toc-section"><a href="#ch7-edit-bill">7.3 Editing a Bill</a></li>
+    <li class="toc-section"><a href="#ch7-partial">7.4 Partial & Minimum Payments</a></li>
+    <li class="toc-section"><a href="#ch7-history">7.5 Payment History</a></li>
+    <li class="toc-section"><a href="#ch7-transactions">7.6 Credit Card Transactions</a></li>
+    <li class="toc-section"><a href="#ch7-add">7.7 Adding Cards & Bills</a></li>
 
     <li class="toc-chapter"><a href="#ch8">8. Pending Items</a></li>
     <li class="toc-section"><a href="#ch8-view">8.1 Managing Pending Items</a></li>
@@ -456,12 +462,23 @@
     <li class="toc-section"><a href="#ch8-edit">8.3 Editing Pending Items</a></li>
     <li class="toc-section"><a href="#ch8-status">8.4 Status Management</a></li>
 
-    <li class="toc-chapter"><a href="#ch9">9. Profile & Settings</a></li>
-    <li class="toc-section"><a href="#ch9-profile">9.1 Profile Management</a></li>
-    <li class="toc-section"><a href="#ch9-accounts">9.2 Managing Bank Accounts</a></li>
-    <li class="toc-section"><a href="#ch9-security">9.3 Data Security</a></li>
+    <li class="toc-chapter"><a href="#ch9">9. Import & Export Data</a></li>
+    <li class="toc-section"><a href="#ch9-import">9.1 Importing Transactions</a></li>
+    <li class="toc-section"><a href="#ch9-export">9.2 Exporting Transactions</a></li>
 
-    <li class="toc-chapter"><a href="#ch10">10. Navigation Guide</a></li>
+    <li class="toc-chapter"><a href="#ch10">10. Profile & Settings</a></li>
+    <li class="toc-section"><a href="#ch10-profile">10.1 Profile Management</a></li>
+    <li class="toc-section"><a href="#ch10-budget">10.2 Budget Settings</a></li>
+    <li class="toc-section"><a href="#ch10-accounts">10.3 Managing Bank Accounts</a></li>
+    <li class="toc-section"><a href="#ch10-version">10.4 Version & Release Notes</a></li>
+    <li class="toc-section"><a href="#ch10-security">10.5 Data Security</a></li>
+
+    <li class="toc-chapter"><a href="#ch11">11. Navigation Guide</a></li>
+
+    <li class="toc-chapter"><a href="#ch12">12. Home Screen Widgets</a></li>
+    <li class="toc-section"><a href="#ch12-add">12.1 Adding Widgets</a></li>
+    <li class="toc-section"><a href="#ch12-actions">12.2 Quick Actions Widget</a></li>
+    <li class="toc-section"><a href="#ch12-balance">12.3 Balance Widget</a></li>
   </ul>
 </div>
 
@@ -473,7 +490,7 @@
   <p>
     Personal Finance Manager is a mobile application designed to help you manage your personal finances efficiently.
     The app provides a comprehensive suite of tools for tracking bank account balances, recording deposits and
-    withdrawals, managing credit card bills, and keeping track of pending payments &mdash; all from your smartphone.
+    withdrawals, managing credit card bills, importing/exporting data, and keeping track of pending payments &mdash; all from your smartphone.
   </p>
 
   <h3 id="ch1-install">1.2 Installation</h3>
@@ -499,11 +516,19 @@
     </div>
     <div class="feature-item">
       <strong>Credit Card Management</strong>
-      <span>Track credit card bills with automatic overdue detection and payment reminders.</span>
+      <span>Track credit card bills with partial payments, minimum due, and overdue detection.</span>
     </div>
     <div class="feature-item">
       <strong>Pending Payments</strong>
       <span>Keep track of upcoming payments, loans, and bills with due date tracking.</span>
+    </div>
+    <div class="feature-item">
+      <strong>Smart Insights</strong>
+      <span>Data-driven financial insights with budget tracking, spending trends, and progress bars.</span>
+    </div>
+    <div class="feature-item">
+      <strong>Import & Export</strong>
+      <span>Import transactions from CSV, TXT, JSON, or Excel files. Export data as Excel spreadsheets.</span>
     </div>
     <div class="feature-item">
       <strong>Smart Notifications</strong>
@@ -514,6 +539,26 @@
       <span>All your financial data is stored locally on your device for maximum privacy.</span>
     </div>
   </div>
+
+  <h3 id="ch1-whats-new">1.4 What's New in v1.0.0.7</h3>
+  <p>This release includes several major new features and improvements:</p>
+  <ul>
+    <li><strong>Quick Deposit & Cost Popup</strong> &mdash; Tap Deposit or Cost buttons on the dashboard to open a quick popup for fast entries without leaving the home screen. Long-press to open the full page.</li>
+    <li><strong>Default Account Selection</strong> &mdash; Choose a default bank/MFS account for deposits and costs during sign-up (Step 4) or update anytime in Profile settings. Quick actions auto-select your default account.</li>
+    <li><strong>Credit Card Bill Paid</strong> &mdash; Each credit card transaction now has a "Bill Paid" button that deducts the transaction amount from the pending credit card bill balance.</li>
+    <li><strong>Improved Button Layout</strong> &mdash; Import button is now smaller and positioned at the top-right. Deposit and Cost buttons are larger and more prominent.</li>
+    <li><strong>What's New Auto-Popup</strong> &mdash; Existing users who update the app see a "What's New" popup on first launch showing new features.</li>
+    <li><strong>Deposit Reason & Categories</strong> &mdash; Add a reason/source when making deposits, with quick category chips (Salary, Freelance, Gift, etc.).</li>
+    <li><strong>Budget Settings</strong> &mdash; Set default monthly cost and deposit targets during sign-up or from the Profile screen.</li>
+    <li><strong>Edit Credit Card Bills</strong> &mdash; Edit the amount of pending credit card bills.</li>
+    <li><strong>Partial & Minimum Payments</strong> &mdash; Make partial credit card bill payments and track minimum due amounts.</li>
+    <li><strong>Import Data</strong> &mdash; Import transactions from CSV, TXT, JSON, or Excel files with auto column mapping.</li>
+    <li><strong>Export Data</strong> &mdash; Export your transactions as Excel spreadsheets (daily, monthly, yearly, or all time).</li>
+    <li><strong>Enhanced Insights</strong> &mdash; 10+ data-driven insights including budget/income tracking, month-over-month comparison, spending trends, and more.</li>
+    <li><strong>Words of Wisdom</strong> &mdash; Inspirational quotes about money and Islamic savings on the Dashboard.</li>
+    <li><strong>Home Screen Widgets</strong> &mdash; Two Android home screen widgets: Quick Actions (Deposit/Cost buttons) and Balance (account balances at a glance).</li>
+    <li><strong>Version & Release Notes</strong> &mdash; View the app version and what's new from the Profile screen.</li>
+  </ul>
 </div>
 
 <!-- ==================== CHAPTER 2: ACCOUNT SETUP ==================== -->
@@ -522,12 +567,12 @@
 
   <h3 id="ch2-signup">2.1 Creating an Account</h3>
   <p>
-    When you first open the app, you'll need to create an account. The sign-up process has three simple steps.
+    When you first open the app, you'll need to create an account. The sign-up process has four steps.
   </p>
 
   <div class="screenshot-container">
     <img src="screenshots/02-signup-step1.png" alt="Sign Up - Step 1">
-    <div class="caption">Figure 2.1 &mdash; Sign Up: Step 1 of 3 (Personal Details)</div>
+    <div class="caption">Figure 2.1 &mdash; Sign Up: Step 1 of 4 (Personal Details)</div>
   </div>
 
   <h4>Step 1: Personal Details</h4>
@@ -558,12 +603,27 @@
     <li>Toggle the switch if you have credit cards.</li>
     <li>If yes, enter the <strong>number of credit cards</strong>.</li>
     <li>For each card, provide the <strong>Bank Name</strong>, <strong>Bill Generation Day</strong> (1-31), and <strong>Last Payment Day</strong> (1-31).</li>
-    <li>Tap <strong>"Create Account"</strong> to complete registration.</li>
+    <li>Tap <strong>"Next"</strong> to proceed to Step 4.</li>
   </ol>
 
   <div class="note-box">
     <span class="note-label">Note</span>
     <p>The Bill Generation Day is when your credit card statement is generated each month. The Last Payment Day is the deadline to pay your bill to avoid late fees.</p>
+  </div>
+
+  <h4>Step 4: Budget Settings & Default Accounts (Optional)</h4>
+  <ol class="steps">
+    <li>Enter your <strong>Default Monthly Cost</strong> &mdash; the amount you typically spend per month. This is used for budget tracking in Insights.</li>
+    <li>Enter your <strong>Default Monthly Deposit</strong> &mdash; the amount you typically earn/receive per month. This is used for income tracking in Insights.</li>
+    <li><strong>Default Deposit Account</strong> &mdash; Select which bank or MFS account to use by default when making quick deposits from the dashboard.</li>
+    <li><strong>Default Cost Account</strong> &mdash; Select which bank or MFS account to use by default when recording quick expenses from the dashboard.</li>
+    <li>All fields are optional. You can skip this step by tapping <strong>"Skip"</strong>.</li>
+    <li>Tap <strong>"Create Account"</strong> to complete registration.</li>
+  </ol>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>Setting budget values and default accounts during sign-up enables budget tracking in Insights and faster quick entries from the Dashboard. You can always update these later from the Profile screen.</p>
   </div>
 
   <h3 id="ch2-login">2.2 Signing In</h3>
@@ -616,7 +676,7 @@
   <h3 id="ch3-overview">3.1 Dashboard Overview</h3>
   <p>
     The Dashboard is your financial command center. It gives you an at-a-glance view of your total balance,
-    recent activity, account balances, and any pending items that need your attention.
+    recent activity, account balances, financial insights, inspirational quotes, and any pending items that need your attention.
   </p>
 
   <div class="screenshot-container">
@@ -645,23 +705,39 @@
     </tr>
     <tr>
       <td><strong>Summary Cards</strong></td>
-      <td>Vertically stacked rows showing total deposits (green), total withdrawals (red), and &mdash; if you have credit cards &mdash; credit card costs (orange) for the selected period. Each row displays an icon badge on the left, the label, and the amount on the right.</td>
+      <td>Vertically stacked rows showing total deposits (green), total withdrawals (red), and credit card costs (orange) for the selected period.</td>
+    </tr>
+    <tr>
+      <td><strong>Import Button</strong></td>
+      <td>Small orange <em>"Import"</em> button at the top-right for importing data files.</td>
     </tr>
     <tr>
       <td><strong>Quick Actions</strong></td>
-      <td>Green <em>"+ Deposit"</em> and red <em>"- Cost"</em> buttons for quick transactions.</td>
+      <td>Large green <em>"+ Deposit"</em> and red <em>"- Cost"</em> buttons. Tap for a quick popup entry; long-press to open the full page.</td>
+    </tr>
+    <tr>
+      <td><strong>Export</strong></td>
+      <td>An "Export Transactions as Excel" button to export your data.</td>
     </tr>
     <tr>
       <td><strong>Account Balances</strong></td>
       <td>Lists each bank account with its current balance.</td>
     </tr>
     <tr>
+      <td><strong>Financial Insights</strong></td>
+      <td>Data-driven insights about your spending, budget, and trends (see Section 3.5).</td>
+    </tr>
+    <tr>
+      <td><strong>Words of Wisdom</strong></td>
+      <td>Inspirational quotes about money and Islamic savings (see Section 3.6).</td>
+    </tr>
+    <tr>
       <td><strong>Pending Bills</strong></td>
-      <td>Shows pending or overdue credit card bills (scroll down to view).</td>
+      <td>Shows pending or overdue credit card bills.</td>
     </tr>
     <tr>
       <td><strong>Pending Payments</strong></td>
-      <td>Shows upcoming payments and overdue items (scroll down to view).</td>
+      <td>Shows upcoming payments and overdue items.</td>
     </tr>
   </table>
 
@@ -677,7 +753,7 @@
   </ul>
 
   <p>
-    The summary cards are displayed as vertically stacked rows below the period filter. Each row has a colored left border, an icon badge, the category label on the left, and the amount (in BDT) on the right. This layout ensures amounts are always fully visible, even for large numbers.
+    The summary cards are displayed as vertically stacked rows below the period filter. Each row has a colored left border, an icon badge, the category label on the left, and the amount (in BDT) on the right.
   </p>
 
   <table>
@@ -697,19 +773,19 @@
       <td><strong>Total Withdrawals</strong></td>
       <td><strong>-</strong></td>
       <td><span class="color-indicator" style="background:#F44336;"></span> Red</td>
-      <td>Bank account expenses, credit card bill payments, and other outgoing money from bank accounts.</td>
+      <td>Bank account expenses, credit card bill payments, and other outgoing money.</td>
     </tr>
     <tr>
       <td><strong>Credit Card Costs</strong></td>
       <td><strong>C</strong></td>
       <td><span class="color-indicator" style="background:#FF9800;"></span> Orange</td>
-      <td>Expenses charged to a credit card (only visible if you have credit cards enabled).</td>
+      <td>Expenses charged to a credit card (only visible if you have credit cards).</td>
     </tr>
   </table>
 
   <div class="note-box">
     <span class="note-label">Note</span>
-    <p>Credit card costs are tracked separately from withdrawals. When you pay off a credit card bill from a bank account, that payment appears under <strong>Total Withdrawals</strong>. When you charge an expense to a credit card, it appears under <strong>Credit Card Costs</strong>. This separation helps you understand how much you're spending on credit versus cash.</p>
+    <p>Credit card costs are tracked separately from withdrawals. When you pay off a credit card bill from a bank account, that payment appears under <strong>Total Withdrawals</strong>. When you charge an expense to a credit card, it appears under <strong>Credit Card Costs</strong>.</p>
   </div>
 
   <h3 id="ch3-notifications">3.3 Notifications</h3>
@@ -731,22 +807,112 @@
 
   <div class="tip-box">
     <span class="tip-label">Tip</span>
-    <p>Check your notifications regularly to stay on top of upcoming bills and avoid late fees. Notifications are sorted by urgency, with the most critical ones at the top.</p>
+    <p>Check your notifications regularly to stay on top of upcoming bills and avoid late fees. Notifications are sorted by urgency, with the most critical ones at the top. Bills with only the minimum paid will continue to appear in notifications until fully paid.</p>
   </div>
 
   <h3 id="ch3-quickactions">3.4 Quick Actions</h3>
   <p>
-    The two large action buttons on the dashboard let you quickly record transactions:
+    The dashboard features a quick entry system for recording transactions without leaving the home screen:
   </p>
   <ul>
-    <li><strong style="color:#4CAF50;">+ Deposit</strong> &mdash; Tap to navigate to the Deposit screen and record incoming money.</li>
-    <li><strong style="color:#F44336;">- Cost</strong> &mdash; Tap to navigate to the Withdrawal screen and record an expense.</li>
+    <li><strong style="color:#FF9800;">Import</strong> (small button, top-right) &mdash; Navigate to the Import Data screen to import transactions from a file.</li>
+    <li><strong style="color:#4CAF50;">+ Deposit</strong> &mdash; Tap to open a quick popup where you can select an account, enter an amount and reason, and submit instantly. Long-press to open the full Deposit page.</li>
+    <li><strong style="color:#F44336;">- Cost</strong> &mdash; Tap to open a quick popup for recording expenses. Long-press to open the full Cost/Withdrawal page.</li>
   </ul>
+
+  <p><strong>Quick Action Popup:</strong> The popup lets you:</p>
+  <ul>
+    <li>Select from your bank/MFS accounts (your default account is pre-selected if configured)</li>
+    <li>Enter the amount</li>
+    <li>Add an optional reason</li>
+    <li>Tap "Open Full Page" at the bottom to switch to the detailed entry screen</li>
+  </ul>
+
+  <p>
+    Below the quick actions, you'll find the <strong>"Export Transactions as Excel"</strong> button that lets you export your transaction data as a downloadable Excel file (see Chapter 9).
+  </p>
 
   <div class="tip-box">
     <span class="tip-label">Tip</span>
-    <p>Pull down on the dashboard to refresh all data and recalculate balances.</p>
+    <p>Pull down on the dashboard to refresh all data and recalculate balances. Set your default accounts in Profile to speed up quick entries.</p>
   </div>
+
+  <h3 id="ch3-insights">3.5 Financial Insights</h3>
+  <p>
+    The Financial Insights section on the Dashboard provides data-driven analysis of your spending patterns and financial health. Insights are refreshed automatically when you open the Dashboard.
+  </p>
+
+  <p>The following types of insights are available:</p>
+
+  <table>
+    <tr>
+      <th>Insight</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td><strong>Budget Tracking</strong></td>
+      <td>If you've set a default monthly cost, shows a progress bar indicating how much of your monthly budget you've used. Turns red when exceeded.</td>
+    </tr>
+    <tr>
+      <td><strong>Income Tracking</strong></td>
+      <td>If you've set a default monthly deposit, shows a progress bar for how much of your expected income you've received.</td>
+    </tr>
+    <tr>
+      <td><strong>Month-over-Month</strong></td>
+      <td>Compares your spending this month to last month with trend arrows (up/down).</td>
+    </tr>
+    <tr>
+      <td><strong>Daily Average Spending</strong></td>
+      <td>Shows your average daily spending for the current month.</td>
+    </tr>
+    <tr>
+      <td><strong>Biggest Expense</strong></td>
+      <td>Highlights your single largest expense this month.</td>
+    </tr>
+    <tr>
+      <td><strong>Most Frequent Category</strong></td>
+      <td>Identifies the spending category you use most often.</td>
+    </tr>
+    <tr>
+      <td><strong>Projected Balance</strong></td>
+      <td>Estimates your month-end balance based on current spending rate.</td>
+    </tr>
+    <tr>
+      <td><strong>Pending CC Bills</strong></td>
+      <td>Alerts you to upcoming credit card bill due dates.</td>
+    </tr>
+    <tr>
+      <td><strong>Weekend vs Weekday</strong></td>
+      <td>Compares your weekend spending to weekday spending.</td>
+    </tr>
+    <tr>
+      <td><strong>Spending Trend</strong></td>
+      <td>Shows whether your spending is increasing or decreasing with directional arrows.</td>
+    </tr>
+  </table>
+
+  <p>
+    Additionally, generic financial tips are shown below the data-driven insights, covering topics like savings rate, the 50/30/20 rule, emergency funds, and investment.
+  </p>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>Set your default monthly cost and deposit from the Profile screen (see Section 10.2) to unlock budget and income tracking progress bars in Insights.</p>
+  </div>
+
+  <h3 id="ch3-quotes">3.6 Words of Wisdom</h3>
+  <p>
+    Below the Financial Insights section, you'll find the <strong>"Words of Wisdom"</strong> section featuring inspirational quotes about money management and Islamic savings.
+  </p>
+
+  <ul>
+    <li>A <strong>random quote</strong> is displayed each time you open the Dashboard.</li>
+    <li>Tap <strong>"New Quote"</strong> to see a different quote.</li>
+    <li>Each quote has a category badge: <span style="color:#2E7D32; font-weight:600;">Islamic</span> (green) or <span style="color:#1565C0; font-weight:600;">Finance</span> (blue).</li>
+    <li>Tap <strong>"View All Quotes"</strong> to expand and see all available quotes.</li>
+  </ul>
+
+  <p>Quotes include wisdom from the Quran, Hadith, and famous financial thinkers like Warren Buffett, Benjamin Franklin, and Dave Ramsey.</p>
 </div>
 
 <!-- ==================== CHAPTER 4: DEPOSITS ==================== -->
@@ -768,14 +934,43 @@
     <li>Select the <strong>Bank Account</strong> where the money is being deposited using the dropdown.</li>
     <li>The <strong>Current Balance</strong> for the selected account is displayed in green.</li>
     <li>Enter the <strong>Deposit Amount</strong> in BDT.</li>
+    <li>Enter a <strong>Reason / Source</strong> for the deposit (see Section 4.2).</li>
     <li>A <strong>New Balance</strong> preview will appear showing the updated balance after the deposit.</li>
     <li>Tap <strong>"Confirm Deposit"</strong> to record the transaction.</li>
     <li>A success message will appear. Tap <strong>"OK"</strong> to return to the Dashboard.</li>
   </ol>
 
+  <h3 id="ch4-reason">4.2 Deposit Reason & Categories</h3>
+  <p>
+    When making a deposit, you can specify the reason or source of the income. This helps you track where your money is coming from.
+  </p>
+
+  <ul>
+    <li>Enter a custom reason in the <strong>"Reason / Source"</strong> text field.</li>
+    <li>Or tap one of the <strong>Quick Category</strong> chips to auto-fill the reason:</li>
+  </ul>
+
+  <table>
+    <tr>
+      <th>Category</th>
+      <th>Use For</th>
+    </tr>
+    <tr><td>Salary</td><td>Monthly salary or wages</td></tr>
+    <tr><td>Freelance</td><td>Freelance or contract income</td></tr>
+    <tr><td>Gift</td><td>Gifts or monetary presents</td></tr>
+    <tr><td>Investment Return</td><td>Returns from investments</td></tr>
+    <tr><td>Refund</td><td>Refunds from purchases</td></tr>
+    <tr><td>Other</td><td>Any other source of income</td></tr>
+  </table>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>Adding a reason to your deposits helps the Financial Insights feature identify your most frequent income sources and provide better analysis.</p>
+  </div>
+
   <div class="note-box">
     <span class="note-label">Note</span>
-    <p>The deposit amount must be a valid number greater than zero. The new balance is previewed in real-time as you type.</p>
+    <p>The deposit reason is optional. The deposit amount must be a valid number greater than zero. The new balance is previewed in real-time as you type.</p>
   </div>
 </div>
 
@@ -796,30 +991,25 @@
   <ol class="steps">
     <li>From the Dashboard, tap the red <strong>"- Cost"</strong> button.</li>
     <li>Select an account from the <strong>"Select Account"</strong> dropdown. The picker shows both <strong>Bank Accounts</strong> and <strong>Credit Cards</strong>, separated by section headers.</li>
-    <li>If a bank account is selected, the <strong>Current Balance</strong> is shown in red. If a credit card is selected, no balance is displayed (credit cards don't have a running balance in the app).</li>
+    <li>If a bank account is selected, the <strong>Current Balance</strong> is shown in red. If a credit card is selected, no balance is displayed.</li>
     <li>Enter the <strong>Amount</strong> in BDT.</li>
     <li>Enter a <strong>Reason / Description</strong> for the expense (e.g., "Groceries", "Transport").</li>
     <li>Alternatively, tap a <strong>Quick Category</strong> button to auto-fill the reason.</li>
-    <li>If a bank account is selected and you enter an amount, a <strong>New Balance</strong> preview appears. This preview is hidden for credit card expenses.</li>
+    <li>If a bank account is selected and you enter an amount, a <strong>New Balance</strong> preview appears.</li>
     <li>Tap <strong>"Confirm Expense"</strong> to record the transaction.</li>
   </ol>
 
   <h3 id="ch5-cc">5.2 Credit Card Expenses</h3>
   <p>
-    You can now record expenses made on a credit card directly from the Cost screen. This is separate from credit card <em>bill payments</em>.
+    You can record expenses made on a credit card directly from the Cost screen. This is separate from credit card <em>bill payments</em>.
   </p>
 
   <ul>
     <li><strong>Credit cards appear in the account picker</strong> &mdash; labeled as <em>"BankName (Credit Card)"</em> under a "Credit Cards" section header.</li>
     <li><strong>No balance impact</strong> &mdash; Credit card expenses do not affect any bank account balance. They are tracked separately as spending on that card.</li>
-    <li><strong>View on Credit Cards screen</strong> &mdash; All expenses recorded against a credit card appear in the collapsible <strong>"Transactions"</strong> section on the Credit Cards screen (see Section 7.4).</li>
-    <li><strong>Shown separately on Dashboard</strong> &mdash; Credit card expenses appear under the <strong>"Credit Card Costs"</strong> summary card (orange) on the Dashboard, separate from bank account withdrawals. This card is only visible to users with credit cards enabled.</li>
+    <li><strong>View on Credit Cards screen</strong> &mdash; All expenses recorded against a credit card appear in the collapsible <strong>"Transactions"</strong> section on the Credit Cards screen (see Section 7.6).</li>
+    <li><strong>Shown separately on Dashboard</strong> &mdash; Credit card expenses appear under the <strong>"Credit Card Costs"</strong> summary card (orange) on the Dashboard.</li>
   </ul>
-
-  <div class="note-box">
-    <span class="note-label">Note</span>
-    <p>During <strong>CC Bill Payment</strong> mode (when the "CC Bill Payment" quick category is selected), credit cards are hidden from the account picker. You pay bills <em>from</em> a bank account, not from another credit card.</p>
-  </div>
 
   <h3 id="ch5-categories">5.3 Quick Categories</h3>
   <p>
@@ -863,8 +1053,8 @@
   <p>Each transaction entry shows:</p>
   <ul>
     <li><strong>Transaction Type</strong> &mdash; <span style="color:#4CAF50;">+ Deposit</span> (green) or <span style="color:#F44336;">- Withdrawal</span> (red).</li>
-    <li><strong>Account</strong> &mdash; Which bank account or credit card was used. Credit card transactions display as <em>"CardName (CC)"</em> to distinguish them from bank account transactions.</li>
-    <li><strong>Reason</strong> &mdash; The description/category (for withdrawals).</li>
+    <li><strong>Account</strong> &mdash; Which bank account or credit card was used. Credit card transactions display as <em>"CardName (CC)"</em>.</li>
+    <li><strong>Reason</strong> &mdash; The description/category for the transaction.</li>
     <li><strong>Amount</strong> &mdash; Color-coded: green for deposits, red for withdrawals.</li>
     <li><strong>Time</strong> &mdash; When the transaction was recorded.</li>
   </ul>
@@ -902,20 +1092,15 @@
     <li>The Edit Transaction modal will open with all the current details pre-filled.</li>
     <li>Modify any of the following fields:
       <ul>
-        <li><strong>Type</strong> &mdash; Toggle between <span style="color:#4CAF50;">Deposit</span> and <span style="color:#F44336;">Withdrawal</span> using the toggle buttons. The active type is highlighted in its respective color.</li>
-        <li><strong>Account</strong> &mdash; Change which bank account this transaction belongs to using the dropdown picker. <em>For credit card transactions, the credit card name is shown as a read-only label (e.g., "DBBL Visa (Credit Card)") and cannot be changed to a bank account.</em></li>
-        <li><strong>Amount (BDT)</strong> &mdash; Update the transaction amount. Must be greater than zero.</li>
-        <li><strong>Date</strong> &mdash; Change the transaction date in <code>YYYY-MM-DD</code> format (e.g., 2026-02-15). The original time of the transaction is preserved.</li>
-        <li><strong>Reason</strong> &mdash; Update the description or reason for the transaction.</li>
+        <li><strong>Type</strong> &mdash; Toggle between Deposit and Withdrawal.</li>
+        <li><strong>Account</strong> &mdash; Change which bank account this transaction belongs to.</li>
+        <li><strong>Amount (BDT)</strong> &mdash; Update the transaction amount.</li>
+        <li><strong>Date</strong> &mdash; Change the transaction date in <code>YYYY-MM-DD</code> format.</li>
+        <li><strong>Reason</strong> &mdash; Update the description or reason.</li>
       </ul>
     </li>
     <li>Tap <strong>"Save"</strong> to apply your changes, or <strong>"Cancel"</strong> to discard them.</li>
   </ol>
-
-  <div class="tip-box">
-    <span class="tip-label">Tip</span>
-    <p>Made a deposit by mistake instead of a withdrawal? Use the Type toggle in the Edit modal to switch it without having to delete and re-create the transaction.</p>
-  </div>
 
   <div class="note-box">
     <span class="note-label">Note</span>
@@ -936,7 +1121,7 @@
 
   <div class="warning-box">
     <span class="warning-label">Caution</span>
-    <p>Removing a transaction is permanent and cannot be undone. The deletion will immediately affect your account balance and all summary calculations. Double-check before confirming.</p>
+    <p>Removing a transaction is permanent and cannot be undone. The deletion will immediately affect your account balance and all summary calculations.</p>
   </div>
 </div>
 
@@ -957,7 +1142,7 @@
 
   <p>The screen is organized as follows:</p>
   <ul>
-    <li><strong>Total CC Spending</strong> &mdash; A red-tinted summary card at the top showing the total amount spent across all credit cards (only visible if there are any CC transactions).</li>
+    <li><strong>Total CC Spending</strong> &mdash; A red-tinted summary card at the top showing the total amount spent across all credit cards.</li>
     <li><strong>Per-Card Sections</strong> &mdash; Each credit card has its own card showing the bank name, bill/due dates, pending bills, payment history, and transactions.</li>
   </ul>
 
@@ -965,10 +1150,10 @@
   <ul>
     <li><strong>Bank Name</strong> &mdash; The name of the credit card (e.g., "DBBL Visa").</li>
     <li><strong>Bill Date | Due Date</strong> &mdash; When your statement is generated and when payment is due.</li>
-    <li><strong>Total Pending</strong> &mdash; The total amount of unpaid bills (shown in orange if any are pending).</li>
-    <li><strong>Active Bills</strong> &mdash; Pending and Overdue bills shown at the top with "Mark Paid" buttons.</li>
-    <li><strong>Payment History</strong> &mdash; Collapsible section showing previously paid bills (see Section 7.3).</li>
-    <li><strong>Transactions</strong> &mdash; Collapsible section showing expenses made on this card (see Section 7.4).</li>
+    <li><strong>Total Pending</strong> &mdash; The total amount of unpaid bills.</li>
+    <li><strong>Active Bills</strong> &mdash; Pending and Overdue bills with action buttons (Mark Paid, Edit, Pay Minimum).</li>
+    <li><strong>Payment History</strong> &mdash; Collapsible section showing previously paid bills.</li>
+    <li><strong>Transactions</strong> &mdash; Collapsible section showing expenses made on this card.</li>
   </ul>
 
   <h3 id="ch7-bills">7.2 Tracking Bills</h3>
@@ -983,54 +1168,114 @@
     <tr>
       <td><strong>Paid</strong></td>
       <td><span class="color-indicator" style="background:#4CAF50;"></span> Green</td>
-      <td>The bill has been paid. Moved to Payment History section.</td>
+      <td>The bill has been fully paid. Moved to Payment History section.</td>
     </tr>
     <tr>
       <td><strong>Pending</strong></td>
       <td><span class="color-indicator" style="background:#FF9800;"></span> Orange</td>
-      <td>The bill is due but hasn't been paid yet. A "Mark Paid" button is available.</td>
+      <td>The bill is due but hasn't been fully paid yet.</td>
     </tr>
     <tr>
       <td><strong>Overdue</strong></td>
       <td><span class="color-indicator" style="background:#F44336;"></span> Red</td>
-      <td>The payment date has passed and the bill is still unpaid.</td>
+      <td>The payment date has passed and the bill is still unpaid or partially paid.</td>
     </tr>
   </table>
 
   <p>
     <strong>Active bills</strong> (Pending and Overdue) are shown prominently at the top of each card.
-    To mark a bill as paid, tap the <strong>"Mark Paid"</strong> button next to the bill.
+    Each active bill displays its amount, status, and any partial payment progress. If a minimum due amount was set, it is displayed below the bill amount.
   </p>
 
-  <h3 id="ch7-history">7.3 Payment History</h3>
+  <h3 id="ch7-edit-bill">7.3 Editing a Bill</h3>
+  <p>
+    You can edit the amount of any active (Pending or Overdue) bill:
+  </p>
+
+  <ol class="steps">
+    <li>Find the active bill you want to edit on the Credit Cards screen.</li>
+    <li>Tap the <strong>"Edit"</strong> button next to the bill.</li>
+    <li>The Edit Bill modal will open with the current bill amount pre-filled.</li>
+    <li>Enter the new <strong>Bill Amount</strong>.</li>
+    <li>Tap <strong>"Save"</strong> to update the amount, or <strong>"Cancel"</strong> to discard changes.</li>
+  </ol>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>Use the Edit feature when your credit card statement amount changes due to returns, adjustments, or corrections.</p>
+  </div>
+
+  <h3 id="ch7-partial">7.4 Partial & Minimum Payments</h3>
+  <p>
+    The app supports flexible payment options for credit card bills:
+  </p>
+
+  <h4>Full Payment</h4>
+  <ol class="steps">
+    <li>Tap <strong>"Mark Paid"</strong> on the bill you want to pay.</li>
+    <li>The payment mode defaults to <strong>"Full Payment"</strong>.</li>
+    <li>Select the <strong>bank account</strong> from which to deduct the payment.</li>
+    <li>Tap <strong>"Confirm Payment"</strong> to pay the full bill amount.</li>
+  </ol>
+
+  <h4>Partial Payment</h4>
+  <ol class="steps">
+    <li>Tap <strong>"Mark Paid"</strong> on the bill.</li>
+    <li>Switch the payment mode to <strong>"Partial Payment"</strong>.</li>
+    <li>Enter the <strong>partial amount</strong> you want to pay.</li>
+    <li>Toggle <strong>"Deduct from main bill?"</strong> to choose whether the partial payment should reduce the outstanding bill amount or just be recorded as a transaction.</li>
+    <li>Select the <strong>bank account</strong> for the payment.</li>
+    <li>Tap <strong>"Confirm Payment"</strong> to process.</li>
+  </ol>
+
+  <h4>Minimum Due Payment</h4>
+  <p>
+    If a minimum due amount was set when the bill was created, a <strong>"Pay Minimum"</strong> button appears on the bill. Tapping it pre-fills the partial payment amount with the minimum due value.
+  </p>
+
+  <div class="warning-box">
+    <span class="warning-label">Important</span>
+    <p>Paying only the minimum due does <strong>not</strong> mark the bill as fully paid. The bill will remain in Pending or Overdue status, and notifications will continue until the full amount is paid.</p>
+  </div>
+
+  <p>
+    When partial payments have been made on a bill, the display shows:
+  </p>
+  <ul>
+    <li>The original bill amount</li>
+    <li>The amount paid so far (in green)</li>
+    <li>The remaining balance</li>
+  </ul>
+
+  <div class="note-box">
+    <span class="note-label">Note</span>
+    <p>When the "Deduct from main bill?" toggle is ON, partial payments reduce the outstanding bill amount. When it reaches zero, the bill is automatically marked as Paid. When the toggle is OFF, the payment is recorded as a transaction but the bill amount remains unchanged.</p>
+  </div>
+
+  <h3 id="ch7-history">7.5 Payment History</h3>
   <p>
     Paid bills are separated from active bills into a collapsible <strong>"Payment History"</strong> section.
     This keeps the card view clean while still providing access to your bill payment records.
   </p>
 
   <ul>
-    <li>Tap <strong>"Payment History (N)"</strong> to expand or collapse the section, where N is the number of paid bills.</li>
+    <li>Tap <strong>"Payment History (N)"</strong> to expand or collapse the section.</li>
     <li>Each paid bill shows the <strong>bill month</strong>, a green <strong>"Paid"</strong> badge, the <strong>payment date</strong>, and the <strong>amount</strong> with strikethrough styling.</li>
-    <li>The payment date is derived from when the bill was marked as paid.</li>
   </ul>
 
-  <h3 id="ch7-transactions">7.4 Credit Card Transactions</h3>
+  <h3 id="ch7-transactions">7.6 Credit Card Transactions</h3>
   <p>
-    Each credit card now shows a collapsible <strong>"Transactions (N)"</strong> section listing all expenses recorded against that card from the Cost screen (see Section 5.2).
+    Each credit card shows a collapsible <strong>"Transactions (N)"</strong> section listing all expenses recorded against that card from the Cost screen (see Section 5.2).
   </p>
 
   <ul>
-    <li>Tap <strong>"Transactions (N)"</strong> to expand or collapse the list, where N is the number of transactions.</li>
+    <li>Tap <strong>"Transactions (N)"</strong> to expand or collapse the list.</li>
     <li>Each transaction shows the <strong>reason/description</strong>, <strong>date</strong>, and <strong>amount</strong> in red.</li>
     <li>These transactions are also visible on the main Transactions screen (Section 6), where they display the credit card name with a "(CC)" suffix.</li>
+    <li><strong>"Bill Paid" Button</strong> &mdash; Each transaction that hasn't been marked yet shows a green "Bill Paid" button. Tapping it deducts the transaction amount from the card's most recent pending bill. Once the bill is fully paid (total deductions meet or exceed bill amount), the bill is automatically marked as "Paid". Transactions already marked show a "Bill Paid" badge.</li>
   </ul>
 
-  <div class="tip-box">
-    <span class="tip-label">Tip</span>
-    <p>Use the Transactions section to review what you've spent on each credit card. This helps you understand your CC spending before your bill statement arrives.</p>
-  </div>
-
-  <h3 id="ch7-add">7.5 Adding Cards & Bills</h3>
+  <h3 id="ch7-add">7.7 Adding Cards & Bills</h3>
 
   <h4>Adding a New Credit Card</h4>
   <ol class="steps">
@@ -1045,12 +1290,13 @@
   <ol class="steps">
     <li>On the desired credit card, tap <strong>"+ Add Bill"</strong>.</li>
     <li>Enter the <strong>Bill Amount</strong> in BDT.</li>
+    <li>Optionally, enter the <strong>Minimum Due</strong> amount &mdash; the minimum payment required to avoid late fees.</li>
     <li>Tap <strong>"Add Bill"</strong> to save.</li>
   </ol>
 
   <div class="tip-box">
     <span class="tip-label">Tip</span>
-    <p>Add your credit card bills as soon as you receive your statement. This helps you track payment deadlines and avoid overdue fees. The app will automatically notify you when bills are approaching their due date.</p>
+    <p>Add your credit card bills as soon as you receive your statement. Include the minimum due amount so you can quickly make minimum payments when needed. The app will keep notifying you until the full bill is paid.</p>
   </div>
 </div>
 
@@ -1076,7 +1322,7 @@
     <li><strong>Amount</strong> &mdash; The amount due in BDT.</li>
     <li><strong>Due Date</strong> &mdash; When the payment is due.</li>
     <li><strong>Days Remaining</strong> &mdash; How many days until (or since) the due date.</li>
-    <li><strong>Description</strong> &mdash; Optional additional details (shown in italics).</li>
+    <li><strong>Description</strong> &mdash; Optional additional details.</li>
   </ul>
 
   <p>Filter pending items using the tabs at the top:</p>
@@ -1108,29 +1354,19 @@
   <ol class="steps">
     <li>Find the pending item you want to edit in the list.</li>
     <li>Tap the orange <strong>"Edit"</strong> button on the item card.</li>
-    <li>The Edit Pending Item modal will open with all current details pre-filled: Title, Amount, Due Date, and Description.</li>
+    <li>The Edit Pending Item modal will open with all current details pre-filled.</li>
     <li>Modify any of the fields as needed.</li>
     <li>Tap <strong>"Save Changes"</strong> to apply your edits, or <strong>"Cancel"</strong> to discard them.</li>
   </ol>
-
-  <div class="tip-box">
-    <span class="tip-label">Tip</span>
-    <p>Use the Edit option to update the due date or amount if your payment terms change. When editing, the date picker allows selecting past dates so you can correct an existing item's due date without restrictions.</p>
-  </div>
-
-  <div class="note-box">
-    <span class="note-label">Note</span>
-    <p>The Edit option is also available on the Dashboard in the "Pending Payments" section for quick access. Completed items cannot be edited.</p>
-  </div>
 
   <h3 id="ch8-status">8.4 Status Management</h3>
   <p>
     Each pending item has action buttons to manage its status:
   </p>
   <ul>
-    <li><strong>Mark Complete</strong> &mdash; Tap to mark an item as paid/completed. The item will move to the "Completed" filter and appear with reduced opacity.</li>
-    <li><strong>Edit</strong> &mdash; Tap to modify the item's title, amount, due date, or description (see Section 8.3).</li>
-    <li><strong>Delete</strong> &mdash; Tap to permanently remove an item. A confirmation dialog will appear before deletion.</li>
+    <li><strong>Mark Complete</strong> &mdash; Tap to mark an item as paid/completed.</li>
+    <li><strong>Edit</strong> &mdash; Tap to modify the item's details (see Section 8.3).</li>
+    <li><strong>Delete</strong> &mdash; Tap to permanently remove an item.</li>
   </ul>
 
   <div class="warning-box">
@@ -1139,11 +1375,111 @@
   </div>
 </div>
 
-<!-- ==================== CHAPTER 9: PROFILE ==================== -->
+<!-- ==================== CHAPTER 9: IMPORT & EXPORT ==================== -->
 <div class="chapter" id="ch9">
-  <h2 class="chapter-title">9. Profile & Settings</h2>
+  <h2 class="chapter-title">9. Import & Export Data</h2>
 
-  <h3 id="ch9-profile">9.1 Profile Management</h3>
+  <h3 id="ch9-import">9.1 Importing Transactions</h3>
+  <p>
+    The Import Data feature lets you bulk-import transactions from external files into the app. This is useful for migrating data from other finance apps or spreadsheets.
+  </p>
+
+  <h4>Supported File Formats</h4>
+  <table>
+    <tr>
+      <th>Format</th>
+      <th>Extension</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td><strong>CSV</strong></td>
+      <td>.csv</td>
+      <td>Comma-separated values. The most common format for spreadsheet exports.</td>
+    </tr>
+    <tr>
+      <td><strong>Text</strong></td>
+      <td>.txt</td>
+      <td>Tab, comma, semicolon, or pipe-delimited text files. The delimiter is auto-detected.</td>
+    </tr>
+    <tr>
+      <td><strong>JSON</strong></td>
+      <td>.json</td>
+      <td>JSON array of transaction objects, or an object with a <code>transactions</code> key.</td>
+    </tr>
+    <tr>
+      <td><strong>Excel</strong></td>
+      <td>.xlsx, .xls</td>
+      <td>Microsoft Excel spreadsheet files.</td>
+    </tr>
+  </table>
+
+  <h4>Import Steps</h4>
+  <ol class="steps">
+    <li>From the Dashboard, tap the orange <strong>"Import"</strong> button.</li>
+    <li>Tap <strong>"Pick a File"</strong> and select a CSV, TXT, JSON, or Excel file from your device.</li>
+    <li>The app will parse the file and display the detected columns with a preview of the first 5 rows.</li>
+    <li><strong>Map the columns</strong>: The app auto-detects common column names (type, amount, reason, date). You can manually adjust the mapping using the dropdown pickers if needed.</li>
+    <li>Select the <strong>bank account</strong> to assign the imported transactions to.</li>
+    <li>Review the preview and tap <strong>"Import Transactions"</strong> to complete the import.</li>
+    <li>A success message will confirm how many transactions were imported.</li>
+  </ol>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>For best results, ensure your file has headers like "type", "amount", "reason", and "date". The auto-mapping feature recognizes many common aliases (e.g., "description" for "reason", "category" for "reason", "value" for "amount").</p>
+  </div>
+
+  <div class="note-box">
+    <span class="note-label">Note</span>
+    <p>The "type" column should contain values like "deposit", "income", "credit" (for deposits) or "withdrawal", "expense", "debit", "cost" (for withdrawals). If the type is not recognized, the transaction defaults to "withdrawal".</p>
+  </div>
+
+  <h3 id="ch9-export">9.2 Exporting Transactions</h3>
+  <p>
+    Export your transaction data as an Excel spreadsheet for backup or analysis in other tools.
+  </p>
+
+  <ol class="steps">
+    <li>On the Dashboard, tap the <strong>"Export Transactions as Excel"</strong> button.</li>
+    <li>A modal will appear with export options:</li>
+  </ol>
+
+  <table>
+    <tr>
+      <th>Option</th>
+      <th>Exports</th>
+    </tr>
+    <tr><td><strong>Today</strong></td><td>Only today's transactions</td></tr>
+    <tr><td><strong>This Month</strong></td><td>Transactions from the current month</td></tr>
+    <tr><td><strong>This Year</strong></td><td>Transactions from the current year</td></tr>
+    <tr><td><strong>All Time</strong></td><td>Every transaction ever recorded</td></tr>
+  </table>
+
+  <ol class="steps" style="counter-reset: step-counter 2;">
+    <li>Tap your desired option. The app will generate an Excel file.</li>
+    <li>The system share dialog will open, allowing you to save the file, send it via WhatsApp, email, or any other sharing method.</li>
+  </ol>
+
+  <p>The exported Excel file includes the following columns:</p>
+  <ul>
+    <li><strong>Date</strong> &mdash; Transaction date</li>
+    <li><strong>Type</strong> &mdash; Deposit or Withdrawal</li>
+    <li><strong>Amount</strong> &mdash; Transaction amount in BDT</li>
+    <li><strong>Reason</strong> &mdash; Description/category</li>
+    <li><strong>Account</strong> &mdash; Bank account or credit card name</li>
+  </ul>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>Export your data monthly to keep a backup. Since all data is stored locally on your device, regular exports ensure you don't lose your records if the app is uninstalled.</p>
+  </div>
+</div>
+
+<!-- ==================== CHAPTER 10: PROFILE ==================== -->
+<div class="chapter" id="ch10">
+  <h2 class="chapter-title">10. Profile & Settings</h2>
+
+  <h3 id="ch10-profile">10.1 Profile Management</h3>
   <p>
     Access your profile by tapping on your <strong>profile avatar</strong> (the circle with your initials)
     in the top-left corner of the Dashboard.
@@ -1151,7 +1487,7 @@
 
   <div class="screenshot-container">
     <img src="screenshots/12-profile.png" alt="Profile Screen">
-    <div class="caption">Figure 9.1 &mdash; Profile Screen</div>
+    <div class="caption">Figure 10.1 &mdash; Profile Screen</div>
   </div>
 
   <p>From the Profile screen, you can:</p>
@@ -1161,36 +1497,80 @@
     <li><strong>View Your Email</strong> &mdash; Your registered email is displayed below your name.</li>
   </ul>
 
-  <h3 id="ch9-accounts">9.2 Managing Bank Accounts</h3>
+  <h3 id="ch10-budget">10.2 Budget Settings</h3>
+  <p>
+    The Budget Settings section on the Profile screen lets you set or update your default monthly financial targets. These values power the budget and income tracking features in Financial Insights.
+  </p>
+
+  <ul>
+    <li><strong>Default Monthly Cost</strong> &mdash; Your expected monthly spending amount. When set, the Insights section will show a budget usage progress bar.</li>
+    <li><strong>Default Monthly Deposit</strong> &mdash; Your expected monthly income amount. When set, the Insights section will show an income tracking progress bar.</li>
+  </ul>
+
+  <ol class="steps">
+    <li>Scroll to the <strong>"Budget Settings"</strong> section on the Profile screen.</li>
+    <li>Tap the <strong>"Edit"</strong> button.</li>
+    <li>Enter or update your <strong>Default Monthly Cost</strong> and <strong>Default Monthly Deposit</strong> values.</li>
+    <li>Tap <strong>"Save"</strong> to apply the changes.</li>
+  </ol>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>These values are optional but highly recommended. Setting them enables powerful budget tracking insights on your Dashboard, helping you stay within your spending limits and track your income goals.</p>
+  </div>
+
+  <h3 id="ch10-default-accounts">10.2.1 Default Accounts</h3>
+  <p>
+    The <strong>Default Accounts</strong> section (visible when you have bank accounts) lets you choose which accounts are pre-selected when using the quick deposit and cost popups on the Dashboard.
+  </p>
+  <ul>
+    <li><strong>Default Deposit Account</strong> &mdash; Tap a bank/MFS name to set it as your default for quick deposits. Tap again to deselect.</li>
+    <li><strong>Default Cost Account</strong> &mdash; Tap a bank/MFS name to set it as your default for quick expenses. Tap again to deselect.</li>
+  </ul>
+  <p>Changes are saved automatically when you tap an account chip.</p>
+
+  <h3 id="ch10-accounts">10.3 Managing Bank Accounts</h3>
   <p>The Profile screen also lets you manage your bank accounts and credit cards:</p>
 
   <h4>Bank Accounts</h4>
   <ul>
     <li><strong>Add Account</strong> &mdash; Tap <strong>"+ Add"</strong> next to "Bank Accounts", enter the bank name, and tap "Add".</li>
-    <li><strong>Delete Account</strong> &mdash; Tap the red <strong>"X"</strong> next to any account. A confirmation dialog will appear. Note: Deleting an account also removes all its associated transactions.</li>
+    <li><strong>Delete Account</strong> &mdash; Tap the red <strong>"X"</strong> next to any account. Note: Deleting an account also removes all its associated transactions.</li>
   </ul>
 
   <h4>Credit Cards</h4>
   <ul>
     <li><strong>Add Card</strong> &mdash; Tap <strong>"+ Add"</strong> next to "Credit Cards", fill in the bank name and billing dates, and tap "Add".</li>
-    <li><strong>Delete Card</strong> &mdash; Tap the red <strong>"X"</strong> next to any card. This also removes all associated bills and credit card transactions.</li>
+    <li><strong>Delete Card</strong> &mdash; Tap the red <strong>"X"</strong> next to any card. This also removes all associated bills and transactions.</li>
   </ul>
 
   <div class="warning-box">
     <span class="warning-label">Caution</span>
-    <p>Deleting a bank account will permanently remove all transactions associated with that account. This action cannot be undone. Deleting a credit card will also remove all its bill records and any expenses recorded against that card.</p>
+    <p>Deleting a bank account will permanently remove all transactions associated with that account. Deleting a credit card will also remove all its bill records and any expenses recorded against that card. These actions cannot be undone.</p>
   </div>
 
-  <h3 id="ch9-security">9.3 Data Security</h3>
+  <h3 id="ch10-version">10.4 Version & Release Notes</h3>
   <p>
-    At the bottom of the Profile screen, you'll find the <strong>Data Security</strong> information section.
+    At the bottom of the Profile screen, you can see the current <strong>app version</strong>. Tap the <strong>"What's New?"</strong> link to open a popup showing the latest features and improvements in the current version.
+  </p>
+  <p>
+    <strong>Automatic Update Popup:</strong> When you update the app to a new version, a "What's New" popup automatically appears on the Dashboard showing all new features. This only appears once per version update.
+  </p>
+
+  <div class="note-box">
+    <span class="note-label">Note</span>
+    <p>The current version is <strong>v1.0.0.7</strong>. Check the release notes to learn about all the new features available to you.</p>
+  </div>
+
+  <h3 id="ch10-security">10.5 Data Security</h3>
+  <p>
     Your financial data is stored entirely on your device using local storage. No data is sent to
     external servers, ensuring complete privacy and security of your financial information.
   </p>
 
   <div class="note-box">
     <span class="note-label">Note</span>
-    <p>Since all data is stored locally, uninstalling the app will permanently delete all your financial records. Consider keeping a backup of important data.</p>
+    <p>Since all data is stored locally, uninstalling the app will permanently delete all your financial records. Use the Export feature (Section 9.2) to keep regular backups of your data.</p>
   </div>
 
   <h4>Logging Out</h4>
@@ -1201,9 +1581,9 @@
   </p>
 </div>
 
-<!-- ==================== CHAPTER 10: NAVIGATION ==================== -->
-<div class="chapter" id="ch10">
-  <h2 class="chapter-title">10. Navigation Guide</h2>
+<!-- ==================== CHAPTER 11: NAVIGATION ==================== -->
+<div class="chapter" id="ch11">
+  <h2 class="chapter-title">11. Navigation Guide</h2>
 
   <p>The app uses a combination of bottom tab navigation and screen-to-screen navigation:</p>
 
@@ -1216,9 +1596,9 @@
       <th>Icon</th>
       <th>Screen</th>
     </tr>
-    <tr><td>Dashboard</td><td>[=]</td><td>Main dashboard with balance overview and quick actions</td></tr>
+    <tr><td>Dashboard</td><td>[=]</td><td>Main dashboard with balance overview, insights, and quick actions</td></tr>
     <tr><td>Transactions</td><td>[$]</td><td>Complete transaction history with filters</td></tr>
-    <tr><td>Credit Cards</td><td>[C]</td><td>Credit card management and bill tracking</td></tr>
+    <tr><td>Credit Cards</td><td>[C]</td><td>Credit card management, bill tracking, and partial payments</td></tr>
     <tr><td>Pending</td><td>[!]</td><td>Pending payments and obligations</td></tr>
   </table>
 
@@ -1229,13 +1609,15 @@
       <th>Action</th>
       <th>Goes To</th>
     </tr>
-    <tr><td>Login</td><td>Tap "Sign Up"</td><td>Sign Up (Step 1)</td></tr>
+    <tr><td>Login</td><td>Tap "Sign Up"</td><td>Sign Up (Step 1 of 4)</td></tr>
     <tr><td>Login</td><td>Tap "Forgot Password?"</td><td>Reset Password</td></tr>
     <tr><td>Login</td><td>Tap "Sign In"</td><td>Dashboard</td></tr>
     <tr><td>Dashboard</td><td>Tap profile avatar</td><td>Profile</td></tr>
     <tr><td>Dashboard</td><td>Tap "+ Deposit"</td><td>Deposit Screen</td></tr>
     <tr><td>Dashboard</td><td>Tap "- Cost"</td><td>Withdrawal Screen</td></tr>
+    <tr><td>Dashboard</td><td>Tap "Import"</td><td>Import Data Screen</td></tr>
     <tr><td>Dashboard</td><td>Tap notification bell</td><td>Notifications (modal)</td></tr>
+    <tr><td>Dashboard</td><td>Tap "Export Transactions"</td><td>Export Modal</td></tr>
     <tr><td>Any Screen</td><td>Tap "< Back"</td><td>Previous screen</td></tr>
   </table>
 
@@ -1251,8 +1633,63 @@
       or refer to this manual for guidance.
     </p>
     <p style="color: #888; font-size: 10pt;">
-      Personal Finance Manager &copy; 2026. All rights reserved.
+      Personal Finance Manager v1.0.0.7 &copy; 2026. All rights reserved.
     </p>
+  </div>
+</div>
+
+<!-- ==================== CHAPTER 12: WIDGETS ==================== -->
+<div class="chapter" id="ch12">
+  <h2 class="chapter-title">12. Home Screen Widgets</h2>
+
+  <p>
+    The app includes two Android home screen widgets that give you quick access to key features without opening the full app.
+  </p>
+
+  <h3 id="ch12-add">12.1 Adding Widgets</h3>
+  <p>To add a widget to your home screen:</p>
+  <ol class="steps">
+    <li>Long-press on an empty area of your Android home screen.</li>
+    <li>Tap <strong>"Widgets"</strong> from the menu that appears.</li>
+    <li>Scroll through the widget list and find <strong>"Finance Manager"</strong>.</li>
+    <li>You will see two widget options: <strong>"Finance - Quick Actions"</strong> and <strong>"Finance - Balance"</strong>.</li>
+    <li>Long-press your desired widget and drag it to your home screen.</li>
+    <li>Resize the widget by dragging its edges if needed.</li>
+  </ol>
+
+  <h3 id="ch12-actions">12.2 Quick Actions Widget</h3>
+  <p>
+    The Quick Actions widget provides two buttons on your home screen:
+  </p>
+  <ul>
+    <li><strong style="color:#4CAF50;">+ Deposit</strong> &mdash; Tap to open the app and navigate to the Deposit screen.</li>
+    <li><strong style="color:#F44336;">- Cost</strong> &mdash; Tap to open the app and navigate to the Withdrawal screen.</li>
+  </ul>
+  <p>
+    This widget is designed as a compact 3x1 cell widget, perfect for placing at the bottom or top of your home screen for instant access to recording transactions.
+  </p>
+
+  <h3 id="ch12-balance">12.3 Balance Widget</h3>
+  <p>
+    The Balance widget shows your financial overview at a glance:
+  </p>
+  <ul>
+    <li><strong>Total Balance</strong> &mdash; Your combined balance across all bank accounts, displayed prominently.</li>
+    <li><strong>Individual Accounts</strong> &mdash; Each bank account's name and current balance (up to 5 accounts).</li>
+    <li><strong>Color-coded</strong> &mdash; Positive balances are shown in green, negative in red.</li>
+  </ul>
+  <p>
+    The widget automatically refreshes when you open the app or make any transaction. Tapping anywhere on the widget opens the full app.
+  </p>
+
+  <div class="tip-box">
+    <span class="tip-label">Tip</span>
+    <p>The Balance widget updates every 30 minutes automatically, and immediately whenever you make a deposit or record an expense through the app. For the most up-to-date balance, simply tap the widget to open the app.</p>
+  </div>
+
+  <div class="note-box">
+    <span class="note-label">Note</span>
+    <p>Both widgets require you to be logged in to the app. If you log out and log back in, the widgets will update with your account data on the next refresh.</p>
   </div>
 </div>
 

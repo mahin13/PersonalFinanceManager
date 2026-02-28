@@ -50,6 +50,12 @@ const SignUpScreen = ({ navigation }) => {
 
   // Step 3: Credit Cards
   const [hasCreditCards, setHasCreditCards] = useState(false);
+
+  // Step 4: Budget Settings
+  const [defaultMonthlyCost, setDefaultMonthlyCost] = useState('');
+  const [defaultMonthlyDeposit, setDefaultMonthlyDeposit] = useState('');
+  const [defaultDepositAccount, setDefaultDepositAccount] = useState('');
+  const [defaultCostAccount, setDefaultCostAccount] = useState('');
   const [numCreditCards, setNumCreditCards] = useState('1');
   const [creditCards, setCreditCards] = useState([
     { bankName: '', billGenerationDay: 26, lastPaymentDay: 14 }
@@ -144,6 +150,8 @@ const SignUpScreen = ({ navigation }) => {
       setStep(2);
     } else if (step === 2 && validateStep2()) {
       setStep(3);
+    } else if (step === 3 && validateStep3()) {
+      setStep(4);
     }
   };
 
@@ -156,8 +164,6 @@ const SignUpScreen = ({ navigation }) => {
   };
 
   const handleSignUp = async () => {
-    if (!validateStep3()) return;
-
     setLoading(true);
 
     const userData = {
@@ -175,6 +181,10 @@ const SignUpScreen = ({ navigation }) => {
             lastPaymentDay: parseInt(card.lastPaymentDay),
           }))
         : [],
+      defaultMonthlyCost: defaultMonthlyCost ? parseFloat(defaultMonthlyCost) : null,
+      defaultMonthlyDeposit: defaultMonthlyDeposit ? parseFloat(defaultMonthlyDeposit) : null,
+      defaultDepositAccountName: defaultDepositAccount || null,
+      defaultCostAccountName: defaultCostAccount || null,
     };
 
     const result = await signUp(userData);
@@ -444,6 +454,103 @@ const SignUpScreen = ({ navigation }) => {
     </>
   );
 
+  // Get all account names for default account selection
+  const getAllAccountNames = () => {
+    const names = [];
+    bankAccounts.filter(a => a.trim()).forEach(a => names.push(a.trim()));
+    if (hasMFS) {
+      selectedMFS.forEach(m => names.push(m));
+      if (customMFSName.trim()) names.push(customMFSName.trim());
+    }
+    return names;
+  };
+
+  const renderStep4 = () => {
+    const accountNames = getAllAccountNames();
+
+    return (
+      <>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Default Monthly Budget (BDT)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., 30000 (optional)"
+            placeholderTextColor="#999"
+            value={defaultMonthlyCost}
+            onChangeText={setDefaultMonthlyCost}
+            keyboardType="numeric"
+          />
+          <Text style={styles.smallLabel}>How much you plan to spend each month</Text>
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Expected Monthly Income (BDT)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., 50000 (optional)"
+            placeholderTextColor="#999"
+            value={defaultMonthlyDeposit}
+            onChangeText={setDefaultMonthlyDeposit}
+            keyboardType="numeric"
+          />
+          <Text style={styles.smallLabel}>How much you expect to earn each month</Text>
+        </View>
+
+        {accountNames.length > 0 && (
+          <>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Default Deposit Account</Text>
+              <Text style={styles.smallLabel}>Quick deposits will go to this account</Text>
+              <View style={styles.defaultAccountOptions}>
+                {accountNames.map((name) => (
+                  <TouchableOpacity
+                    key={`dep_${name}`}
+                    style={[
+                      styles.defaultAccountChip,
+                      defaultDepositAccount === name && styles.defaultAccountChipActiveGreen,
+                    ]}
+                    onPress={() => setDefaultDepositAccount(defaultDepositAccount === name ? '' : name)}
+                  >
+                    <Text style={[
+                      styles.defaultAccountChipText,
+                      defaultDepositAccount === name && styles.defaultAccountChipTextActive,
+                    ]}>
+                      {name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Default Cost Account</Text>
+              <Text style={styles.smallLabel}>Quick expenses will be deducted from this account</Text>
+              <View style={styles.defaultAccountOptions}>
+                {accountNames.map((name) => (
+                  <TouchableOpacity
+                    key={`cost_${name}`}
+                    style={[
+                      styles.defaultAccountChip,
+                      defaultCostAccount === name && styles.defaultAccountChipActiveRed,
+                    ]}
+                    onPress={() => setDefaultCostAccount(defaultCostAccount === name ? '' : name)}
+                  >
+                    <Text style={[
+                      styles.defaultAccountChipText,
+                      defaultCostAccount === name && styles.defaultAccountChipTextActive,
+                    ]}>
+                      {name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
+      </>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -454,7 +561,7 @@ const SignUpScreen = ({ navigation }) => {
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Text style={styles.backButtonText}>{'<'} Back</Text>
           </TouchableOpacity>
-          <Text style={styles.stepIndicator}>Step {step} of 3</Text>
+          <Text style={styles.stepIndicator}>Step {step} of 4</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -462,33 +569,46 @@ const SignUpScreen = ({ navigation }) => {
             {step === 1 && 'Create Account'}
             {step === 2 && 'Bank Accounts'}
             {step === 3 && 'Credit Cards'}
+            {step === 4 && 'Budget Settings'}
           </Text>
           <Text style={styles.subtitle}>
             {step === 1 && 'Fill in your personal details'}
             {step === 2 && 'Add your bank accounts'}
             {step === 3 && 'Configure your credit cards (optional)'}
+            {step === 4 && 'Set your monthly budget goals (optional)'}
           </Text>
 
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}
           {step === 3 && renderStep3()}
+          {step === 4 && renderStep4()}
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={step === 3 ? handleSignUp : handleNext}
+            onPress={step === 4 ? handleSignUp : handleNext}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>
-                {step === 3 ? 'Create Account' : 'Next'}
+                {step === 4 ? 'Create Account' : 'Next'}
               </Text>
             )}
           </TouchableOpacity>
 
+          {step === 4 && (
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={handleSignUp}
+              disabled={loading}
+            >
+              <Text style={styles.skipButtonText}>Skip & Create Account</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.progressContainer}>
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <View
                 key={s}
                 style={[
@@ -625,6 +745,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  skipButton: {
+    alignItems: 'center',
+    marginTop: 12,
+    paddingVertical: 8,
+  },
+  skipButtonText: {
+    color: '#999',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -675,6 +805,36 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   mfsChipTextSelected: {
+    color: '#fff',
+  },
+  defaultAccountOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  defaultAccountChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  defaultAccountChipActiveGreen: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  defaultAccountChipActiveRed: {
+    backgroundColor: '#F44336',
+    borderColor: '#F44336',
+  },
+  defaultAccountChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  defaultAccountChipTextActive: {
     color: '#fff',
   },
 });

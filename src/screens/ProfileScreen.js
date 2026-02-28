@@ -80,6 +80,10 @@ const ProfileScreen = ({ navigation }) => {
       setUserEmail(profile?.email || user.email);
       setProfileImage(profile?.profileImage || null);
       setHasCreditCards(profile?.hasCreditCards || cards.length > 0);
+      setDefaultMonthlyCost(profile?.defaultMonthlyCost ? String(profile.defaultMonthlyCost) : '');
+      setDefaultMonthlyDeposit(profile?.defaultMonthlyDeposit ? String(profile.defaultMonthlyDeposit) : '');
+      setDefaultDepositAccount(profile?.defaultDepositAccount || '');
+      setDefaultCostAccount(profile?.defaultCostAccount || '');
     } catch (error) {
       console.error('Error loading profile data:', error);
     }
@@ -178,9 +182,22 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const [showReleaseNotes, setShowReleaseNotes] = useState(false);
+
+  // Budget settings states
+  const [defaultMonthlyCost, setDefaultMonthlyCost] = useState('');
+  const [defaultMonthlyDeposit, setDefaultMonthlyDeposit] = useState('');
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [editBudgetCost, setEditBudgetCost] = useState('');
+  const [editBudgetDeposit, setEditBudgetDeposit] = useState('');
+
   const [showAddMFSModal, setShowAddMFSModal] = useState(false);
   const [selectedMFSProvider, setSelectedMFSProvider] = useState('');
   const [customMFSName, setCustomMFSName] = useState('');
+
+  // Default account states
+  const [defaultDepositAccount, setDefaultDepositAccount] = useState('');
+  const [defaultCostAccount, setDefaultCostAccount] = useState('');
 
   const mfsAccounts = bankAccounts.filter(a => a.type === 'mfs' || a.type === 'bkash');
 
@@ -428,12 +445,127 @@ const ProfileScreen = ({ navigation }) => {
           )}
         </View>
 
+        {/* Budget Settings Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Budget Settings</Text>
+            <TouchableOpacity
+              style={styles.addSmallButton}
+              onPress={() => {
+                setEditBudgetCost(defaultMonthlyCost);
+                setEditBudgetDeposit(defaultMonthlyDeposit);
+                setShowBudgetModal(true);
+              }}
+            >
+              <Text style={styles.addSmallButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.listItem}>
+            <View style={[styles.listItemIcon, { backgroundColor: '#FFEBEE' }]}>
+              <Text style={[styles.iconText, { color: '#F44336' }]}>-</Text>
+            </View>
+            <View style={styles.listItemContent}>
+              <Text style={styles.listItemText}>Monthly Budget</Text>
+              <Text style={styles.listItemSubtext}>
+                {defaultMonthlyCost ? `${parseFloat(defaultMonthlyCost).toLocaleString()} BDT` : 'Not set'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.listItem}>
+            <View style={[styles.listItemIcon, { backgroundColor: '#E8F5E9' }]}>
+              <Text style={[styles.iconText, { color: '#4CAF50' }]}>+</Text>
+            </View>
+            <View style={styles.listItemContent}>
+              <Text style={styles.listItemText}>Expected Income</Text>
+              <Text style={styles.listItemSubtext}>
+                {defaultMonthlyDeposit ? `${parseFloat(defaultMonthlyDeposit).toLocaleString()} BDT` : 'Not set'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Default Accounts Section */}
+        {bankAccounts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Default Accounts</Text>
+            </View>
+            <Text style={{ color: '#666', fontSize: 12, marginBottom: 12, marginTop: -8 }}>
+              Select default accounts for quick deposits and costs from the dashboard.
+            </Text>
+
+            <Text style={styles.inputLabel}>Default Deposit Account</Text>
+            <View style={styles.defaultAccountChips}>
+              {bankAccounts.map((acc) => (
+                <TouchableOpacity
+                  key={`dep_${acc.accountId}`}
+                  style={[
+                    styles.defaultAccChip,
+                    defaultDepositAccount === acc.accountId && styles.defaultAccChipGreen,
+                  ]}
+                  onPress={async () => {
+                    const newVal = defaultDepositAccount === acc.accountId ? '' : acc.accountId;
+                    setDefaultDepositAccount(newVal);
+                    try {
+                      await updateUserProfile(user.userId, { defaultDepositAccount: newVal || null });
+                    } catch (e) {}
+                  }}
+                >
+                  <Text style={[
+                    styles.defaultAccChipText,
+                    defaultDepositAccount === acc.accountId && { color: '#fff' },
+                  ]}>
+                    {acc.bankName}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Default Cost Account</Text>
+            <View style={styles.defaultAccountChips}>
+              {bankAccounts.map((acc) => (
+                <TouchableOpacity
+                  key={`cost_${acc.accountId}`}
+                  style={[
+                    styles.defaultAccChip,
+                    defaultCostAccount === acc.accountId && styles.defaultAccChipRed,
+                  ]}
+                  onPress={async () => {
+                    const newVal = defaultCostAccount === acc.accountId ? '' : acc.accountId;
+                    setDefaultCostAccount(newVal);
+                    try {
+                      await updateUserProfile(user.userId, { defaultCostAccount: newVal || null });
+                    } catch (e) {}
+                  }}
+                >
+                  <Text style={[
+                    styles.defaultAccChipText,
+                    defaultCostAccount === acc.accountId && { color: '#fff' },
+                  ]}>
+                    {acc.bankName}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Security Info */}
         <View style={styles.securitySection}>
           <Text style={styles.securityTitle}>Data Security</Text>
           <Text style={styles.securityText}>
             Your data is stored locally on your device only. No data is sent to any server or shared with third parties. Your information is private and secure.
           </Text>
+        </View>
+
+        {/* App Version & Release Notes */}
+        <View style={styles.versionSection}>
+          <Text style={styles.versionText}>v1.0.0.7</Text>
+          <TouchableOpacity onPress={() => setShowReleaseNotes(true)}>
+            <Text style={styles.releaseNotesLink}>What's New?</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
@@ -604,6 +736,75 @@ const ProfileScreen = ({ navigation }) => {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Budget Settings Modal */}
+      <Modal
+        visible={showBudgetModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBudgetModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Budget Settings</Text>
+                <Text style={{ color: '#666', marginBottom: 12 }}>
+                  Set your monthly budget goals to get better insights.
+                </Text>
+                <Text style={styles.inputLabel}>Monthly Budget (BDT)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g., 30000"
+                  placeholderTextColor="#999"
+                  value={editBudgetCost}
+                  onChangeText={setEditBudgetCost}
+                  keyboardType="numeric"
+                />
+                <Text style={styles.inputLabel}>Expected Monthly Income (BDT)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g., 50000"
+                  placeholderTextColor="#999"
+                  value={editBudgetDeposit}
+                  onChangeText={setEditBudgetDeposit}
+                  keyboardType="numeric"
+                />
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setShowBudgetModal(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={async () => {
+                      try {
+                        await updateUserProfile(user.userId, {
+                          defaultMonthlyCost: editBudgetCost ? parseFloat(editBudgetCost) : null,
+                          defaultMonthlyDeposit: editBudgetDeposit ? parseFloat(editBudgetDeposit) : null,
+                        });
+                        setDefaultMonthlyCost(editBudgetCost);
+                        setDefaultMonthlyDeposit(editBudgetDeposit);
+                        setShowBudgetModal(false);
+                        Alert.alert('Success', 'Budget settings updated!');
+                      } catch (error) {
+                        Alert.alert('Error', 'Failed to update budget settings');
+                      }
+                    }}
+                  >
+                    <Text style={styles.confirmButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Add Card Modal */}
       <Modal
         visible={showAddCardModal}
@@ -685,6 +886,60 @@ const ProfileScreen = ({ navigation }) => {
             </View>
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Release Notes Modal */}
+      <Modal
+        visible={showReleaseNotes}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowReleaseNotes(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+            <Text style={styles.modalTitle}>What's New in v1.0.0.7</Text>
+            <ScrollView style={{ maxHeight: 400 }}>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Quick Deposit & Cost Popup</Text>
+                <Text style={styles.releaseFeatureDesc}>Tap Deposit or Cost on the dashboard for a quick popup entry. Long-press to open the full page.</Text>
+              </View>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Default Account Selection</Text>
+                <Text style={styles.releaseFeatureDesc}>Choose default bank/MFS accounts for deposits and costs in signup or Profile. Quick actions auto-select your default.</Text>
+              </View>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Credit Card Bill Paid</Text>
+                <Text style={styles.releaseFeatureDesc}>Each CC transaction has a "Bill Paid" button to deduct from the pending bill balance.</Text>
+              </View>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Improved Layout</Text>
+                <Text style={styles.releaseFeatureDesc}>Import button is smaller at the top. Deposit and Cost buttons are larger and more prominent.</Text>
+              </View>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Deposit Reason / Source</Text>
+                <Text style={styles.releaseFeatureDesc}>Add reasons to deposits with quick category chips (Salary, Freelance, Gift, etc.)</Text>
+              </View>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Budget Settings</Text>
+                <Text style={styles.releaseFeatureDesc}>Set monthly budget and expected income during sign-up or in Profile. Powers better insights.</Text>
+              </View>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Import Data</Text>
+                <Text style={styles.releaseFeatureDesc}>Import transactions from CSV, TXT, JSON, or Excel files with auto column mapping.</Text>
+              </View>
+              <View style={styles.releaseItem}>
+                <Text style={styles.releaseFeatureTitle}>Home Screen Widgets</Text>
+                <Text style={styles.releaseFeatureDesc}>Two Android widgets: Quick Actions (Deposit/Cost buttons) and Balance (view all account balances).</Text>
+              </View>
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton, { marginTop: 16 }]}
+              onPress={() => setShowReleaseNotes(false)}
+            >
+              <Text style={styles.confirmButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -894,6 +1149,39 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 20,
   },
+  versionSection: {
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingVertical: 12,
+  },
+  versionText: {
+    fontSize: 13,
+    color: '#999',
+  },
+  releaseNotesLink: {
+    fontSize: 14,
+    color: '#1E88E5',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  releaseItem: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  releaseFeatureTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  releaseFeatureDesc: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 18,
+  },
   logoutButton: {
     backgroundColor: '#FFEBEE',
     marginHorizontal: 20,
@@ -1000,6 +1288,34 @@ const styles = StyleSheet.create({
   },
   mfsChipTextSelected: {
     color: '#fff',
+  },
+  defaultAccountChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  defaultAccChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  defaultAccChipGreen: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  defaultAccChipRed: {
+    backgroundColor: '#F44336',
+    borderColor: '#F44336',
+  },
+  defaultAccChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
   },
 });
 
