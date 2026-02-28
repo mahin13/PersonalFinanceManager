@@ -9,22 +9,22 @@ async function getBalanceData() {
   try {
     // Get current logged-in user
     const currentUserStr = await AsyncStorage.getItem('current_user');
-    if (!currentUserStr) return { accounts: [], totalBalance: 0 };
+    if (!currentUserStr) return { accounts: [], totalBalance: 0, creditCardCosts: 0 };
     const currentUser = JSON.parse(currentUserStr);
     const userId = currentUser.userId;
 
     // Load the database
     const dbString = await AsyncStorage.getItem(DB_KEY);
-    if (!dbString) return { accounts: [], totalBalance: 0 };
+    if (!dbString) return { accounts: [], totalBalance: 0, creditCardCosts: 0 };
     const db = JSON.parse(dbString);
 
-    // Get bank accounts for this user
-    const bankAccounts = (db.bankAccounts || []).filter(
-      (a) => a.userId === userId && (a.type === 'bank' || !a.type)
+    // Get ALL accounts (bank + MFS) for this user, excluding credit cards
+    const allAccounts = (db.bankAccounts || []).filter(
+      (a) => a.userId === userId
     );
     const transactions = db.transactions || [];
 
-    const accounts = bankAccounts.map((acc) => {
+    const accounts = allAccounts.map((acc) => {
       const accTransactions = transactions.filter(
         (t) => t.accountId === acc.accountId
       );
@@ -36,15 +36,26 @@ async function getBalanceData() {
           balance -= parseFloat(t.amount);
         }
       });
-      return { name: acc.bankName, balance };
+      const type = acc.type || 'bank';
+      return { name: acc.bankName, balance, type };
     });
 
     const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
 
-    return { accounts, totalBalance };
+    // Calculate credit card costs (total CC spending)
+    let creditCardCosts = 0;
+    const creditCards = (db.creditCards || []).filter(c => c.userId === userId);
+    const cardIds = creditCards.map(c => c.cardId);
+    transactions.forEach((t) => {
+      if (t.creditCardId && cardIds.includes(t.creditCardId)) {
+        creditCardCosts += parseFloat(t.amount);
+      }
+    });
+
+    return { accounts, totalBalance, creditCardCosts };
   } catch (error) {
     console.error('Widget: Error loading balance data:', error);
-    return { accounts: [], totalBalance: 0 };
+    return { accounts: [], totalBalance: 0, creditCardCosts: 0 };
   }
 }
 
@@ -60,10 +71,13 @@ export async function widgetTaskHandler(props) {
         renderWidget(<QuickActionsWidget />);
       } else if (widgetInfo.widgetName === 'Balance') {
         const data = await getBalanceData();
+        const widgetHeight = widgetInfo.height || 110;
         renderWidget(
           <BalanceWidget
             accounts={data.accounts}
             totalBalance={data.totalBalance}
+            creditCardCosts={data.creditCardCosts}
+            widgetHeight={widgetHeight}
           />
         );
       }
