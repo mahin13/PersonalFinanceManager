@@ -544,9 +544,10 @@
   <p>This release includes several major new features and improvements:</p>
   <ul>
     <li><strong>Import Templates</strong> &mdash; Download blank templates (CSV, TXT, JSON, XLSX) from the Import screen to see the expected file format before importing your data.</li>
-    <li><strong>Widget-Only Quick Action</strong> &mdash; The quick deposit/cost popup now triggers exclusively from the home screen widget. Dashboard buttons navigate directly to the full Deposit or Cost screens for a streamlined experience.</li>
+    <li><strong>Widget Direct Navigation</strong> &mdash; Tapping Deposit or Cost on the home screen widget now navigates directly to the full Deposit or Withdrawal screen in the app.</li>
+    <li><strong>Dashboard Date Filter</strong> &mdash; A new "Date" filter button on the Dashboard lets you pick a specific date and view only that day's transactions and summary.</li>
+    <li><strong>Quick Action Date Picker</strong> &mdash; The quick deposit/cost popup now includes a date picker, so you can record transactions for a specific date.</li>
     <li><strong>Pay CC Transactions from Bank</strong> &mdash; The "Bill Paid" button on credit card transactions is replaced with a "Pay" button that lets you select which bank account to pay from. The payment deducts from both the bank balance and the CC bill amount.</li>
-    <li><strong>Quick Deposit & Cost Popup</strong> &mdash; Use the Quick Actions home screen widget to open a quick popup for fast entries without leaving the home screen.</li>
     <li><strong>Default Account Selection</strong> &mdash; Choose a default bank/MFS account for deposits and costs during sign-up (Step 4) or update anytime in Profile settings. Quick actions auto-select your default account.</li>
     <li><strong>Improved Button Layout</strong> &mdash; Import button is now smaller and positioned at the top-right. Deposit and Cost buttons are larger and more prominent.</li>
     <li><strong>What's New Auto-Popup</strong> &mdash; Existing users who update the app see a "What's New" popup on first launch showing new features.</li>
@@ -703,7 +704,7 @@
     </tr>
     <tr>
       <td><strong>Period Filter</strong></td>
-      <td>Switch between <em>Daily</em>, <em>Monthly</em>, and <em>Yearly</em> views for deposit/withdrawal summaries.</td>
+      <td>Switch between <em>Daily</em>, <em>Monthly</em>, <em>Yearly</em>, and <em>Date</em> views. The <em>Date</em> button opens a date picker to filter transactions for a specific day.</td>
     </tr>
     <tr>
       <td><strong>Summary Cards</strong></td>
@@ -715,7 +716,7 @@
     </tr>
     <tr>
       <td><strong>Quick Actions</strong></td>
-      <td>Large green <em>"+ Deposit"</em> and red <em>"- Cost"</em> buttons. Tap to navigate directly to the full Deposit or Cost screen. Quick popup entry is available via the home screen widget.</td>
+      <td>Large green <em>"+ Deposit"</em> and red <em>"- Cost"</em> buttons. Tap to open a quick action popup with account selection, date picker, amount, and reason fields for fast entries.</td>
     </tr>
     <tr>
       <td><strong>Export</strong></td>
@@ -818,13 +819,14 @@
   </p>
   <ul>
     <li><strong style="color:#FF9800;">Import</strong> (small button, top-right) &mdash; Navigate to the Import Data screen to import transactions from a file.</li>
-    <li><strong style="color:#4CAF50;">+ Deposit</strong> &mdash; Tap to navigate directly to the full Deposit screen.</li>
-    <li><strong style="color:#F44336;">- Cost</strong> &mdash; Tap to navigate directly to the full Cost/Withdrawal screen.</li>
+    <li><strong style="color:#4CAF50;">+ Deposit</strong> &mdash; Tap to open a quick action popup for recording a deposit.</li>
+    <li><strong style="color:#F44336;">- Cost</strong> &mdash; Tap to open a quick action popup for recording an expense.</li>
   </ul>
 
-  <p><strong>Quick Action Popup (Widget Only):</strong> The quick entry popup is triggered exclusively from the <strong>Quick Actions home screen widget</strong> (see Section 12.2). When you tap Deposit or Cost on the widget, the app opens with a quick popup that lets you:</p>
+  <p><strong>Quick Action Popup:</strong> The quick entry popup lets you:</p>
   <ul>
     <li>Select from your bank/MFS accounts (your default account is pre-selected if configured)</li>
+    <li>Pick a date using the date picker (defaults to today)</li>
     <li>Enter the amount</li>
     <li>Add an optional reason</li>
     <li>Tap "Open Full Page" at the bottom to switch to the detailed entry screen</li>
@@ -1675,12 +1677,12 @@
     The Quick Actions widget provides two buttons on your home screen:
   </p>
   <ul>
-    <li><strong style="color:#4CAF50;">+ Deposit</strong> &mdash; Tap to open the app and launch a quick Deposit popup on the Dashboard, allowing you to record a deposit without navigating away.</li>
-    <li><strong style="color:#F44336;">- Cost</strong> &mdash; Tap to open the app and launch a quick Cost popup on the Dashboard, allowing you to record a withdrawal without navigating away.</li>
+    <li><strong style="color:#4CAF50;">+ Deposit</strong> &mdash; Tap to open the app and navigate directly to the Deposit screen.</li>
+    <li><strong style="color:#F44336;">- Cost</strong> &mdash; Tap to open the app and navigate directly to the Withdrawal screen.</li>
   </ul>
   <p>
     This widget is designed as a compact 3x1 cell widget, perfect for placing at the bottom or top of your home screen for instant access to recording transactions.
-    <strong>Note:</strong> The quick action popup is exclusive to the widget &mdash; tapping the Deposit or Cost buttons inside the app will navigate directly to the full Deposit or Withdrawal screens.
+    Tapping either button takes you straight to the relevant screen &mdash; no need to navigate through the Dashboard first.
   </p>
 
   <h3 id="ch12-balance">12.3 Balance Widget</h3>

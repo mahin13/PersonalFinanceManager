@@ -323,14 +323,22 @@ export const bulkAddTransactions = async (transactions) => {
   return transactions.length;
 };
 
-export const getTransactions = async (userId, filter = 'all') => {
+export const getTransactions = async (userId, filter = 'all', specificDate = null) => {
   const db = await loadDatabase();
   let transactions = db.transactions.filter(t => t.userId === userId);
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  if (filter === 'daily') {
+  if (filter === 'date' && specificDate) {
+    const target = new Date(specificDate);
+    const startOfDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+    const endOfDay = new Date(target.getFullYear(), target.getMonth(), target.getDate() + 1);
+    transactions = transactions.filter(t => {
+      const tDate = new Date(t.date);
+      return tDate >= startOfDay && tDate < endOfDay;
+    });
+  } else if (filter === 'daily') {
     transactions = transactions.filter(t => {
       const tDate = new Date(t.date);
       return tDate >= today;
@@ -352,8 +360,8 @@ export const getTransactions = async (userId, filter = 'all') => {
   return transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
-export const getTransactionSummary = async (userId, filter = 'all') => {
-  const transactions = await getTransactions(userId, filter);
+export const getTransactionSummary = async (userId, filter = 'all', specificDate = null) => {
+  const transactions = await getTransactions(userId, filter, specificDate);
 
   let totalDeposits = 0;
   let totalWithdrawals = 0;

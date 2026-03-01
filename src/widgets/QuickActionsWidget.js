@@ -25,8 +25,8 @@ export function QuickActionsWidget() {
           borderRadius: 16,
           margin: 4,
         }}
-        clickAction="OPEN_APP"
-        clickActionData={{ screen: 'Dashboard', quickAction: 'Deposit' }}
+        clickAction="OPEN_URI"
+        clickActionData={{ uri: 'personalfinance://Deposit' }}
       >
         <TextWidget
           text="+"
@@ -48,8 +48,8 @@ export function QuickActionsWidget() {
           borderRadius: 16,
           margin: 4,
         }}
-        clickAction="OPEN_APP"
-        clickActionData={{ screen: 'Dashboard', quickAction: 'Withdrawal' }}
+        clickAction="OPEN_URI"
+        clickActionData={{ uri: 'personalfinance://Withdrawal' }}
       >
         <TextWidget
           text="-"

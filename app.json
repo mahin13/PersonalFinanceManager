@@ -18,11 +18,20 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.personalfinance.manager"
     },
+    "scheme": "personalfinance",
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1E88E5"
       },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [{ "scheme": "personalfinance" }],
+          "category": ["DEFAULT", "BROWSABLE"]
+        }
+      ],
       "package": "com.personalfinance.manager",
       "permissions": [
         "NOTIFICATIONS",

@@ -45,6 +45,8 @@ import {
 const DashboardScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
   const [filter, setFilter] = useState('monthly');
+  const [filterDate, setFilterDate] = useState(new Date());
+  const [showFilterDatePicker, setShowFilterDatePicker] = useState(false);
   const [balances, setBalances] = useState({});
   const [summary, setSummary] = useState({
     totalDeposits: 0,
@@ -78,6 +80,8 @@ const DashboardScreen = ({ navigation }) => {
   const [quickSelectedAccount, setQuickSelectedAccount] = useState('');
   const [bankAccountsList, setBankAccountsList] = useState([]);
   const [quickActionLoading, setQuickActionLoading] = useState(false);
+  const [quickDate, setQuickDate] = useState(new Date());
+  const [showQuickDatePicker, setShowQuickDatePicker] = useState(false);
 
   // What's New popup state
   const [showWhatsNew, setShowWhatsNew] = useState(false);
@@ -121,7 +125,7 @@ const DashboardScreen = ({ navigation }) => {
       const [balancesData, summaryData, notificationsData, billsData, itemsData, profileData, accountsData] =
         await Promise.all([
           getAllBalances(user.userId),
-          getTransactionSummary(user.userId, filter),
+          getTransactionSummary(user.userId, filter, filter === 'date' ? filterDate : null),
           getNotifications(user.userId),
           getPendingCreditCardBills(user.userId),
           getActivePendingItems(user.userId),
@@ -151,23 +155,8 @@ const DashboardScreen = ({ navigation }) => {
         // Widget might not be placed - ignore
       }
 
-      // Check for widget quick action — takes priority over notifications
-      let hasWidgetAction = false;
-      try {
-        const widgetAction = await AsyncStorage.getItem('widget_quick_action');
-        if (widgetAction) {
-          hasWidgetAction = true;
-          await AsyncStorage.removeItem('widget_quick_action');
-          // Open quick action popup immediately
-          setTimeout(() => openQuickAction(widgetAction), 100);
-        }
-      } catch (e) {
-        // ignore
-      }
-
       // Only show notification popup on first load (login), not on every tab switch
-      // Skip if widget quick action is active — don't block the popup
-      if (isInitial && !hasWidgetAction) {
+      if (isInitial) {
         // Check What's New
         checkWhatsNew();
 
@@ -188,8 +177,9 @@ const DashboardScreen = ({ navigation }) => {
       const initial = isFirstLoad.current;
       isFirstLoad.current = false;
       loadData(initial);
-    }, [user, filter])
+    }, [user, filter, filterDate])
   );
+
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -304,6 +294,8 @@ const DashboardScreen = ({ navigation }) => {
     setQuickActionType(type);
     setQuickAmount('');
     setQuickReason('');
+    setQuickDate(new Date());
+    setShowQuickDatePicker(false);
     // Set default account from profile preference
     const defaultAccountId = type === 'Deposit'
       ? profileData?.defaultDepositAccount
@@ -334,7 +326,7 @@ const DashboardScreen = ({ navigation }) => {
         type: quickActionType === 'Deposit' ? 'Deposit' : 'Withdrawal',
         amount: parseFloat(quickAmount),
         reason: quickReason.trim() || (quickActionType === 'Deposit' ? 'Quick Deposit' : 'Quick Expense'),
-        date: new Date().toISOString(),
+        date: quickDate.toISOString(),
       });
 
       try { await requestWidgetUpdate('Balance'); } catch (e) {}
@@ -499,7 +491,37 @@ const DashboardScreen = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              style={[styles.filterButton, filter === 'date' && styles.filterButtonActive]}
+              onPress={() => setShowFilterDatePicker(true)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filter === 'date' && styles.filterButtonTextActive,
+                ]}
+              >
+                {filter === 'date'
+                  ? filterDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                  : 'Date'}
+              </Text>
+            </TouchableOpacity>
           </View>
+          {showFilterDatePicker && (
+            <DateTimePicker
+              value={filterDate}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              onChange={(event, selectedDate) => {
+                setShowFilterDatePicker(false);
+                if (selectedDate) {
+                  setFilterDate(selectedDate);
+                  setFilter('date');
+                }
+              }}
+            />
+          )}
         </View>
 
         {/* Summary Cards - Stacked Rows */}
@@ -905,6 +927,28 @@ const DashboardScreen = ({ navigation }) => {
                     ))}
                   </ScrollView>
                 </View>
+
+                <Text style={styles.quickLabel}>Date</Text>
+                <TouchableOpacity
+                  style={styles.quickDateBtn}
+                  onPress={() => setShowQuickDatePicker(true)}
+                >
+                  <Text style={styles.quickDateBtnText}>
+                    {quickDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </Text>
+                </TouchableOpacity>
+                {showQuickDatePicker && (
+                  <DateTimePicker
+                    value={quickDate}
+                    mode="date"
+                    display="default"
+                    maximumDate={new Date()}
+                    onChange={(event, selectedDate) => {
+                      setShowQuickDatePicker(false);
+                      if (selectedDate) setQuickDate(selectedDate);
+                    }}
+                  />
+                )}
 
                 <Text style={styles.quickLabel}>Amount (BDT)</Text>
                 <TextInput
@@ -1577,6 +1621,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#666',
+  },
+  quickDateBtn: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 4,
+  },
+  quickDateBtnText: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
   },
   quickAmountInput: {
     backgroundColor: '#F5F5F5',

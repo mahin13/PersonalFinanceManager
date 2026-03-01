@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Linking } from 'react-native';
 import { registerWidgetTaskHandler } from 'react-native-android-widget';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -128,13 +128,30 @@ const AppStack = () => {
   );
 };
 
+// Deep linking configuration for widget navigation
+const linking = {
+  prefixes: ['personalfinance://'],
+  config: {
+    screens: {
+      MainTabs: {
+        screens: {
+          Dashboard: 'Dashboard',
+        },
+      },
+      Deposit: 'Deposit',
+      Withdrawal: 'Withdrawal',
+      ImportData: 'ImportData',
+      Profile: 'Profile',
+    },
+  },
+};
+
 // Root Navigator
 const RootNavigator = () => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
     if (user) {
-      // Request notification permissions and schedule reminders on login
       const setupNotifications = async () => {
         const granted = await requestNotificationPermissions();
         if (granted) {
@@ -155,7 +172,7 @@ const RootNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={user ? linking : undefined}>
       {user ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );
