@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as XLSX from 'xlsx';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { getBankAccounts, bulkAddTransactions } from '../services/database';
@@ -22,6 +24,12 @@ import {
 } from '../utils/importParser';
 
 const FIELD_OPTIONS = ['-- Skip --', 'type', 'amount', 'reason', 'date'];
+
+const TEMPLATE_HEADERS = ['date', 'type', 'amount', 'reason'];
+const TEMPLATE_SAMPLES = [
+  { date: '2026-01-15', type: 'Deposit', amount: '5000', reason: 'Salary' },
+  { date: '2026-01-16', type: 'Withdrawal', amount: '200', reason: 'Groceries' },
+];
 
 const ImportDataScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -48,6 +56,66 @@ const ImportDataScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error loading accounts:', error);
+    }
+  };
+
+  const handleDownloadTemplate = async (format) => {
+    try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Error', 'Sharing is not available on this device');
+        return;
+      }
+
+      let filePath;
+      let fileName;
+
+      if (format === 'csv') {
+        const csvLines = [TEMPLATE_HEADERS.join(',')];
+        TEMPLATE_SAMPLES.forEach(row => {
+          csvLines.push(TEMPLATE_HEADERS.map(h => row[h]).join(','));
+        });
+        fileName = 'import_template.csv';
+        filePath = FileSystem.cacheDirectory + fileName;
+        await FileSystem.writeAsStringAsync(filePath, csvLines.join('\n'));
+      } else if (format === 'txt') {
+        const txtLines = [TEMPLATE_HEADERS.join('\t')];
+        TEMPLATE_SAMPLES.forEach(row => {
+          txtLines.push(TEMPLATE_HEADERS.map(h => row[h]).join('\t'));
+        });
+        fileName = 'import_template.txt';
+        filePath = FileSystem.cacheDirectory + fileName;
+        await FileSystem.writeAsStringAsync(filePath, txtLines.join('\n'));
+      } else if (format === 'json') {
+        const jsonData = TEMPLATE_SAMPLES.map(row => {
+          const obj = {};
+          TEMPLATE_HEADERS.forEach(h => { obj[h] = row[h]; });
+          return obj;
+        });
+        fileName = 'import_template.json';
+        filePath = FileSystem.cacheDirectory + fileName;
+        await FileSystem.writeAsStringAsync(filePath, JSON.stringify(jsonData, null, 2));
+      } else if (format === 'xlsx') {
+        const sheetData = [TEMPLATE_HEADERS, ...TEMPLATE_SAMPLES.map(row => TEMPLATE_HEADERS.map(h => row[h]))];
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Template');
+        const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+        fileName = 'import_template.xlsx';
+        filePath = FileSystem.cacheDirectory + fileName;
+        await FileSystem.writeAsStringAsync(filePath, wbout, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
+
+      await Sharing.shareAsync(filePath, {
+        mimeType: format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          : format === 'json' ? 'application/json'
+          : 'text/plain',
+        dialogTitle: `Download ${format.toUpperCase()} Template`,
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create template file');
     }
   };
 
@@ -166,6 +234,19 @@ const ImportDataScreen = ({ navigation }) => {
           <Text style={styles.cardSubtitle}>
             Supported formats: CSV, TXT, JSON, Excel (.xlsx)
           </Text>
+
+          <Text style={styles.templateSectionTitle}>Download Template</Text>
+          <View style={styles.templateButtonsRow}>
+            {['csv', 'txt', 'json', 'xlsx'].map((fmt) => (
+              <TouchableOpacity
+                key={fmt}
+                style={styles.templateButton}
+                onPress={() => handleDownloadTemplate(fmt)}
+              >
+                <Text style={styles.templateButtonText}>{fmt.toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <TouchableOpacity
             style={styles.pickButton}
@@ -360,6 +441,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     marginBottom: 16,
+  },
+  templateSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  templateButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  templateButton: {
+    flex: 1,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#FF9800',
+  },
+  templateButtonText: {
+    color: '#FF9800',
+    fontSize: 13,
+    fontWeight: '700',
   },
   pickButton: {
     backgroundColor: '#FF9800',

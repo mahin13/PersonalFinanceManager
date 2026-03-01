@@ -26,7 +26,7 @@ export function QuickActionsWidget() {
           margin: 4,
         }}
         clickAction="OPEN_APP"
-        clickActionData={{ screen: 'Deposit' }}
+        clickActionData={{ screen: 'Dashboard', quickAction: 'Deposit' }}
       >
         <TextWidget
           text="+"
@@ -49,7 +49,7 @@ export function QuickActionsWidget() {
           margin: 4,
         }}
         clickAction="OPEN_APP"
-        clickActionData={{ screen: 'Withdrawal' }}
+        clickActionData={{ screen: 'Dashboard', quickAction: 'Withdrawal' }}
       >
         <TextWidget
           text="-"

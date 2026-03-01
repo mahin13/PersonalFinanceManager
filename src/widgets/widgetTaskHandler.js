@@ -68,6 +68,10 @@ export async function widgetTaskHandler(props) {
     case 'WIDGET_RESIZED':
     case 'WIDGET_CLICK':
       if (widgetInfo.widgetName === 'QuickActions') {
+        // Store quick action type for the Dashboard to pick up
+        if (props.clickActionData && props.clickActionData.quickAction) {
+          await AsyncStorage.setItem('widget_quick_action', props.clickActionData.quickAction);
+        }
         renderWidget(<QuickActionsWidget />);
       } else if (widgetInfo.widgetName === 'Balance') {
         const data = await getBalanceData();

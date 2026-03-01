@@ -641,6 +641,53 @@ export const markTransactionBillPaid = async (transactionId, billId) => {
   return { transaction: db.transactions[txnIndex], bill: db.creditCardBills[billIndex] };
 };
 
+// Pay a CC transaction from a specific bank account
+export const payTransactionFromAccount = async (transactionId, billId, accountId, userId) => {
+  const db = await loadDatabase();
+  const txnIndex = db.transactions.findIndex(t => t.transactionId === transactionId);
+  if (txnIndex === -1) throw new Error('Transaction not found');
+
+  const billIndex = db.creditCardBills.findIndex(b => b.billId === billId);
+  if (billIndex === -1) throw new Error('Bill not found');
+
+  const txn = db.transactions[txnIndex];
+  const bill = db.creditCardBills[billIndex];
+  const account = db.bankAccounts.find(a => a.accountId === accountId);
+  const accountName = account ? account.bankName : 'Unknown';
+
+  // Create withdrawal transaction on the selected bank account
+  const withdrawalTxn = {
+    transactionId: generateId(),
+    userId,
+    accountId,
+    type: 'Withdrawal',
+    amount: parseFloat(txn.amount),
+    reason: `CC Payment: ${txn.reason || 'Credit Card Transaction'}`,
+    date: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+  db.transactions.push(withdrawalTxn);
+
+  // Mark CC transaction as billPaid
+  db.transactions[txnIndex].billPaid = true;
+  db.transactions[txnIndex].paidFromAccount = accountId;
+  db.transactions[txnIndex].updatedAt = new Date().toISOString();
+
+  // Update bill's paidAmount
+  const currentPaid = bill.paidAmount || 0;
+  db.creditCardBills[billIndex].paidAmount = currentPaid + parseFloat(txn.amount);
+
+  // Auto-mark bill as Paid if fully covered
+  if (db.creditCardBills[billIndex].paidAmount >= parseFloat(bill.billAmount)) {
+    db.creditCardBills[billIndex].status = 'Paid';
+  }
+
+  db.creditCardBills[billIndex].updatedAt = new Date().toISOString();
+
+  await saveDatabase(db);
+  return { transaction: db.transactions[txnIndex], bill: db.creditCardBills[billIndex], withdrawal: withdrawalTxn };
+};
+
 // ==================== PENDING ITEMS OPERATIONS ====================
 
 export const getPendingItems = async (userId) => {

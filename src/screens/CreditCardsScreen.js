@@ -29,6 +29,8 @@ import {
   editCreditCardBill,
   makePartialPayment,
   markTransactionBillPaid,
+  payTransactionFromAccount,
+  getAccountBalance,
 } from '../services/database';
 import { scheduleBillReminders } from '../services/notificationService';
 
@@ -61,6 +63,21 @@ const CreditCardsScreen = ({ navigation }) => {
   const [deductFromBill, setDeductFromBill] = useState(true);
   const [minimumDue, setMinimumDue] = useState('');
 
+  // Pay transaction from account states
+  const [showPayTxnModal, setShowPayTxnModal] = useState(false);
+  const [payingTransaction, setPayingTransaction] = useState(null);
+  const [payingTxnBillId, setPayingTxnBillId] = useState(null);
+  const [selectedPayTxnAccount, setSelectedPayTxnAccount] = useState('');
+  const [accountBalances, setAccountBalances] = useState({});
+
+  const loadAccountBalances = async (accounts) => {
+    const balances = {};
+    for (const acc of accounts) {
+      balances[acc.accountId] = await getAccountBalance(acc.accountId);
+    }
+    setAccountBalances(balances);
+  };
+
   const loadData = async () => {
     try {
       const [cardsData, billsData, accountsData] = await Promise.all([
@@ -83,6 +100,7 @@ const CreditCardsScreen = ({ navigation }) => {
         })
       );
       setCardTransactions(txnMap);
+      loadAccountBalances(accountsData);
     } catch (error) {
       console.error('Error loading credit card data:', error);
     }
@@ -217,6 +235,40 @@ const CreditCardsScreen = ({ navigation }) => {
       loadData();
     } catch (error) {
       Alert.alert('Error', 'Failed to add credit card');
+    }
+  };
+
+  const handlePayTransaction = (txn, billId) => {
+    setPayingTransaction(txn);
+    setPayingTxnBillId(billId);
+    if (bankAccounts.length > 0) {
+      setSelectedPayTxnAccount(bankAccounts[0].accountId);
+    }
+    setShowPayTxnModal(true);
+  };
+
+  const handleConfirmPayTransaction = async () => {
+    if (!selectedPayTxnAccount) {
+      Alert.alert('Error', 'Please select an account to pay from');
+      return;
+    }
+    if (!payingTransaction || !payingTxnBillId) return;
+
+    try {
+      await payTransactionFromAccount(
+        payingTransaction.transactionId,
+        payingTxnBillId,
+        selectedPayTxnAccount,
+        user.userId
+      );
+      setShowPayTxnModal(false);
+      setPayingTransaction(null);
+      setPayingTxnBillId(null);
+      loadData();
+      const accName = bankAccounts.find(a => a.accountId === selectedPayTxnAccount)?.bankName || 'account';
+      Alert.alert('Success', `${formatCurrency(payingTransaction.amount)} paid from ${accName}!`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to process payment');
     }
   };
 
@@ -483,31 +535,10 @@ const CreditCardsScreen = ({ navigation }) => {
                                 </Text>
                                 {!txn.billPaid && pendingBillsForCard.length > 0 && (
                                   <TouchableOpacity
-                                    style={styles.txnBillPaidBtn}
-                                    onPress={() => {
-                                      const bill = pendingBillsForCard[0];
-                                      Alert.alert(
-                                        'Mark Bill Paid',
-                                        `Deduct ${formatCurrency(txn.amount)} from ${bill.billMonth} bill (${formatCurrency(bill.billAmount)})?`,
-                                        [
-                                          { text: 'Cancel', style: 'cancel' },
-                                          {
-                                            text: 'Confirm',
-                                            onPress: async () => {
-                                              try {
-                                                await markTransactionBillPaid(txn.transactionId, bill.billId);
-                                                loadData();
-                                                Alert.alert('Success', 'Transaction marked as bill paid!');
-                                              } catch (error) {
-                                                Alert.alert('Error', 'Failed to mark as bill paid');
-                                              }
-                                            },
-                                          },
-                                        ]
-                                      );
-                                    }}
+                                    style={styles.txnPayBtn}
+                                    onPress={() => handlePayTransaction(txn, pendingBillsForCard[0].billId)}
                                   >
-                                    <Text style={styles.txnBillPaidBtnText}>Bill Paid</Text>
+                                    <Text style={styles.txnPayBtnText}>Pay</Text>
                                   </TouchableOpacity>
                                 )}
                               </View>
@@ -906,6 +937,74 @@ const CreditCardsScreen = ({ navigation }) => {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Pay Transaction Modal */}
+      <Modal
+        visible={showPayTxnModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPayTxnModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalDismissArea}
+            activeOpacity={1}
+            onPress={() => setShowPayTxnModal(false)}
+          />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Pay Transaction</Text>
+            {payingTransaction && (
+              <Text style={styles.modalSubtitle}>
+                Amount: {formatCurrency(payingTransaction.amount)} — {payingTransaction.reason || 'No description'}
+              </Text>
+            )}
+
+            <Text style={[styles.label, { marginTop: 12 }]}>Select Bank Account</Text>
+            <ScrollView style={{ maxHeight: 250 }}>
+              {bankAccounts.map((acc) => (
+                <TouchableOpacity
+                  key={acc.accountId}
+                  style={[
+                    styles.payTxnAccountItem,
+                    selectedPayTxnAccount === acc.accountId && styles.payTxnAccountItemSelected,
+                  ]}
+                  onPress={() => setSelectedPayTxnAccount(acc.accountId)}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.payTxnAccountName}>{acc.bankName}</Text>
+                    <Text style={styles.payTxnAccountBalance}>
+                      Balance: {(accountBalances[acc.accountId] || 0).toLocaleString()} BDT
+                    </Text>
+                  </View>
+                  {selectedPayTxnAccount === acc.accountId && (
+                    <Text style={styles.payTxnCheckmark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowPayTxnModal(false);
+                  setPayingTransaction(null);
+                  setPayingTxnBillId(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleConfirmPayTransaction}
+              >
+                <Text style={styles.confirmButtonText}>Confirm Pay</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -1328,6 +1427,49 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 11,
     fontWeight: '600',
+  },
+  txnPayBtn: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#1E88E5',
+  },
+  txnPayBtnText: {
+    color: '#1E88E5',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  payTxnAccountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  payTxnAccountItemSelected: {
+    borderColor: '#1E88E5',
+    backgroundColor: '#E3F2FD',
+  },
+  payTxnAccountName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  payTxnAccountBalance: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  payTxnCheckmark: {
+    fontSize: 20,
+    color: '#1E88E5',
+    fontWeight: 'bold',
   },
   txnBillPaidBadge: {
     color: '#4CAF50',

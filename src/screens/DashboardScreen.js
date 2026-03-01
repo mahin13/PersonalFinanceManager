@@ -82,7 +82,7 @@ const DashboardScreen = ({ navigation }) => {
   // What's New popup state
   const [showWhatsNew, setShowWhatsNew] = useState(false);
 
-  const APP_VERSION = '1.0.0.7';
+  const APP_VERSION = '1.0.0.8';
   const LAST_SEEN_VERSION_KEY = 'last_seen_app_version';
 
   const checkWhatsNew = async () => {
@@ -149,6 +149,18 @@ const DashboardScreen = ({ navigation }) => {
         await requestWidgetUpdate('Balance');
       } catch (e) {
         // Widget might not be placed - ignore
+      }
+
+      // Check for widget quick action
+      try {
+        const widgetAction = await AsyncStorage.getItem('widget_quick_action');
+        if (widgetAction) {
+          await AsyncStorage.removeItem('widget_quick_action');
+          // Small delay to ensure state is settled before opening modal
+          setTimeout(() => openQuickAction(widgetAction), 300);
+        }
+      } catch (e) {
+        // ignore
       }
 
       // Only show notification popup on first load (login), not on every tab switch
@@ -534,15 +546,13 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={[styles.actionButton, styles.depositButton]}
-            onPress={() => openQuickAction('Deposit')}
-            onLongPress={() => navigation.navigate('Deposit')}
+            onPress={() => navigation.navigate('Deposit')}
           >
             <Text style={styles.actionButtonText}>+ Deposit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.costButton]}
-            onPress={() => openQuickAction('Withdrawal')}
-            onLongPress={() => navigation.navigate('Withdrawal')}
+            onPress={() => navigation.navigate('Withdrawal')}
           >
             <Text style={styles.actionButtonText}>- Cost</Text>
           </TouchableOpacity>
@@ -956,11 +966,11 @@ const DashboardScreen = ({ navigation }) => {
             <Text style={styles.whatsNewTitle}>What's New in v{APP_VERSION}</Text>
             <ScrollView style={{ maxHeight: 400 }}>
               {[
+                { title: 'Import Templates', desc: 'Download blank templates (CSV, TXT, JSON, Excel) from the Import screen to quickly format your transaction data.' },
+                { title: 'Widget Quick Actions', desc: 'Quick Deposit/Cost popups now trigger exclusively from the home screen widget. Dashboard buttons navigate directly to full screens.' },
+                { title: 'CC Pay from Bank', desc: 'Pay credit card transactions directly from a bank account. The "Pay" button lets you choose which account to deduct from.' },
                 { title: 'Quick Deposit & Cost', desc: 'Tap Deposit or Cost buttons on the dashboard for a quick popup entry without leaving the home screen.' },
                 { title: 'Default Account Selection', desc: 'Choose a default bank/MFS account for deposits and costs during signup or in Profile settings.' },
-                { title: 'Credit Card Bill Paid', desc: 'Each credit card transaction now shows a "Bill Paid" option to deduct from the CC balance.' },
-                { title: 'Improved Button Layout', desc: 'Import button is now smaller and positioned at the top. Deposit and Cost buttons are more prominent.' },
-                { title: 'Deposit Reason / Source', desc: 'Add reasons to deposits with quick category chips (Salary, Freelance, Gift, etc.)' },
                 { title: 'Import Data', desc: 'Import transactions from CSV, TXT, JSON, or Excel files with auto column mapping.' },
                 { title: 'Home Screen Widgets', desc: 'Two Android widgets: Quick Actions (Deposit/Cost) and Balance (view account balances).' },
               ].map((item, idx) => (
