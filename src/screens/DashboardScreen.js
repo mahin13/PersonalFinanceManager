@@ -151,20 +151,23 @@ const DashboardScreen = ({ navigation }) => {
         // Widget might not be placed - ignore
       }
 
-      // Check for widget quick action
+      // Check for widget quick action — takes priority over notifications
+      let hasWidgetAction = false;
       try {
         const widgetAction = await AsyncStorage.getItem('widget_quick_action');
         if (widgetAction) {
+          hasWidgetAction = true;
           await AsyncStorage.removeItem('widget_quick_action');
-          // Small delay to ensure state is settled before opening modal
-          setTimeout(() => openQuickAction(widgetAction), 300);
+          // Open quick action popup immediately
+          setTimeout(() => openQuickAction(widgetAction), 100);
         }
       } catch (e) {
         // ignore
       }
 
       // Only show notification popup on first load (login), not on every tab switch
-      if (isInitial) {
+      // Skip if widget quick action is active — don't block the popup
+      if (isInitial && !hasWidgetAction) {
         // Check What's New
         checkWhatsNew();
 
@@ -546,13 +549,13 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={[styles.actionButton, styles.depositButton]}
-            onPress={() => navigation.navigate('Deposit')}
+            onPress={() => openQuickAction('Deposit')}
           >
             <Text style={styles.actionButtonText}>+ Deposit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.costButton]}
-            onPress={() => navigation.navigate('Withdrawal')}
+            onPress={() => openQuickAction('Withdrawal')}
           >
             <Text style={styles.actionButtonText}>- Cost</Text>
           </TouchableOpacity>
